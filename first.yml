@@ -11,8 +11,10 @@
         api_token_id: "{{ pve_api_token_id }}"
         api_token_secret: "{{ pve_api_token_secret }}"
         node: "pve"
-        # Utilise l'ID numérique de ton template ici
-        clone: 100                
-        newid: 201
-        name: "VM-Test-3iL"
+        # On utilise vmid pour désigner la VM source par son numéro
+        vmid: 100                 
+        clone: "VM-Test-3iL"      # Ici on met le nom de la source OU on laisse vmid décider
+        newid: 201                # L'ID de la nouvelle VM
+        name: "VM-Etudiant-Final" # Le nom de la nouvelle VM
         timeout: 500
+        state: present
