@@ -10,10 +10,10 @@
         api_user: "{{ pve_api_user }}"
         api_token_id: "{{ pve_api_token_id }}"
         api_token_secret: "{{ pve_api_token_secret }}"
-        node: "pve"
+        node: "exbasis"
         # On utilise vmid pour désigner la VM source par son numéro
         vmid: 100                 
-        clone: "VM-Test-3iL"      # Ici on met le nom de la source OU on laisse vmid décider
+        clone: "TrueNas"      # Ici on met le nom de la source OU on laisse vmid décider
         newid: 201                # L'ID de la nouvelle VM
         name: "VM-Etudiant-Final" # Le nom de la nouvelle VM
         timeout: 500
