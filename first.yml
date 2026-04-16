@@ -4,17 +4,16 @@
   gather_facts: false
   
   tasks:
-    - name: Cloner le modèle de VM sur Proxmox
+    - name: Cloner le modèle TrueNas sur Proxmox
       community.general.proxmox_kvm:
         api_host: "{{ pve_api_host }}"
         api_user: "{{ pve_api_user }}"
         api_token_id: "{{ pve_api_token_id }}"
         api_token_secret: "{{ pve_api_token_secret }}"
         node: "exbasis"
-        # On utilise vmid pour désigner la VM source par son numéro
-        vmid: 100                 
-        clone: "TrueNas"      # Ici on met le nom de la source OU on laisse vmid décider
-        newid: 201                # L'ID de la nouvelle VM
-        name: "VM-Etudiant-Final" # Le nom de la nouvelle VM
-        timeout: 500
+        clone: "TrueNas"          # On utilise le nom exact de ta VM source
+        newid: 201                # L'ID de la nouvelle VM (doit être libre)
+        name: "VM-Etudiant-1"     # Le nom de la nouvelle VM
+        timeout: 600
         state: present
+        full: true
