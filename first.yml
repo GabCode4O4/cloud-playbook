@@ -1,0 +1,18 @@
+---
+- name: Déployer une nouvelle VM pour un étudiant
+  hosts: proxmox
+  gather_facts: false
+  
+  tasks:
+    - name: Cloner le modèle de VM sur Proxmox
+      community.general.proxmox_kvm:
+        api_host: "{{ pve_api_host }}"
+        api_user: "{{ pve_api_user }}"
+        api_token_id: "{{ pve_api_token_id }}"
+        api_token_secret: "{{ pve_api_token_secret }}"
+        node: "pve"                 # Le nom par défaut de ton nœud Proxmox
+        clone: "100"                # L'ID de la VM modèle (Template) à cloner
+        newid: "201"                # L'ID de la nouvelle VM qui sera créée
+        name: "VM-Test-Etudiant"    # Le nom de la future VM
+        state: present
+        full: true                  # Clone complet (indépendant du modèle)
