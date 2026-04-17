@@ -1,17 +1,17 @@
 ---
-- name: Déployer une nouvelle VM pour un étudiant
+- name: newVM
   hosts: all
   gather_facts: false
   
   tasks:
-    - name: Clonage de la VM 100 vers 201
+    - name: 101 vers 201
       community.general.proxmox_kvm:
         api_host: "{{pve_api_host}}"
         api_user: "{{pve_api_user}}"
         api_token_id: "{{pve_api_token_id}}"
         api_token_secret: "{{pve_api_token_secret}}"
         node: "exbasis"
-        vmid: 100                
+        vmid: 102                
         newid: 201                
         name: "VM"
         clone: true
