@@ -4,6 +4,11 @@
   gather_facts: false
   
   tasks:
+    - name: Installer proxmoxer (le traducteur Python)
+      pip:
+        name: proxmoxer
+        state: present
+
     - name: 101 vers 201
       community.proxmox.proxmox_kvm:
         api_host: "{{pve_api_host}}"
