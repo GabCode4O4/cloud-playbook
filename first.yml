@@ -5,7 +5,7 @@
   
   tasks:
     - name: 101 vers 201
-      community.general.proxmox_kvm:
+      community.proxmox.proxmox_kvm:
         api_host: "{{pve_api_host}}"
         api_user: "{{pve_api_user}}"
         api_token_id: "{{pve_api_token_id}}"
