@@ -11,8 +11,7 @@
       pip:
         name: proxmoxer
         state: present
-  
-  tasks:
+
     - name: Cloner la VM Template
       community.proxmox.proxmox_kvm:
         api_host: "{{ pve_api_host }}"
