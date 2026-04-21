@@ -1,14 +1,18 @@
 ---
-- name: Déploiement Cloud Étudiant
+# ==============================================================
+# JEU 1 : PROXMOX (Création de la machine depuis AWX)
+# ==============================================================
+- name: Déploiement Cloud Étudiant - Phase Création
   hosts: all
   gather_facts: false
   
   tasks:
-    - name: Check Python dependencies
+    - name: Installer proxmoxer (le traducteur Python pour l'API)
       pip:
         name: proxmoxer
         state: present
-
+  
+  tasks:
     - name: Cloner la VM Template
       community.proxmox.proxmox_kvm:
         api_host: "{{ pve_api_host }}"
@@ -19,11 +23,53 @@
         vmid: 102
         newid: "{{ newid }}"
         name: "{{ new_vm_name }}"
-        clone: true 
-        full: true
-        timeout: 600
+        clone: true
+        full: false
+        state: started   # <--- TRES IMPORTANT: Demande à Proxmox d'allumer la VM
+        # --- Injection Cloud-Init avec IP Statique ---
         ciuser: "etudiant"
-        cipassword: "password123" 
+        cipassword: "password123"
         ipconfig:
-          ipconfig0: "ip=dhcp"
+          # On remplace DHCP par une IP liée à l'ID (Vérifie que la passerelle gw est la bonne)
+          ipconfig0: "ip=172.16.1.{{ newid }}/24,gw=172.16.1.1" 
+
+    - name: Ajouter la nouvelle VM à l'inventaire temporaire
+      # Cette tâche magique crée un hôte "fantôme" dans la mémoire d'Ansible
+      add_host:
+        name: "172.16.1.{{ newid }}"
+        groups: nouvelles_vms
+        ansible_ssh_common_args: '-o StrictHostKeyChecking=no' # Ignore l'alerte de sécurité SSH
+
+
+# ==============================================================
+# JEU 2 : NOUVELLE VM (Configuration par SSH)
+# ==============================================================
+- name: Configuration de l'environnement étudiant
+  hosts: nouvelles_vms      # On cible le groupe qu'on vient de créer au-dessus
+  remote_user: "etudiant"   # On se connecte avec le compte Cloud-Init
+  become: true              # On demande les droits administrateur (Sudo)
+  gather_facts: true        # Récupère les infos de l'OS cible
+
+  tasks:
+    - name: Attendre que la VM soit démarrée et SSH disponible
+      wait_for_connection:
+        delay: 10
+        timeout: 300
+
+    - name: Mettre à jour le catalogue des applications (apt update)
+      apt:
+        update_cache: yes
+
+    - name: Installer l'environnement de base (Nginx et Python)
+      apt:
+        name:
+          - nginx
+          - python3
+          - python3-pip
         state: present
+
+    - name: S'assurer que le serveur Web Nginx est allumé
+      service:
+        name: nginx
+        state: started
+        enabled: yes
