@@ -1,24 +1,27 @@
 ---
-- name: newVM
+- name: Déploiement Cloud Étudiant
   hosts: all
   gather_facts: false
   
+  # On garde ça pour la sécurité si l'EE est vide, 
+  # mais les variables api_... ne sont plus définies ici !
   tasks:
-    - name: Installer proxmoxer (le traducteur Python)
+    - name: Check Python dependencies
       pip:
         name: proxmoxer
         state: present
 
-    - name: 101 vers 201
+    - name: Cloner la VM Template
       community.proxmox.proxmox_kvm:
-        api_host: "{{pve_api_host}}"
-        api_user: "{{pve_api_user}}"
-        api_token_id: "{{pve_api_token_id}}"
-        api_token_secret: "{{pve_api_token_secret}}"
+        # Ces variables seront injectées AUTOMATIQUEMENT par le Credential
+        api_host: "{{ pve_api_host }}"
+        api_user: "root@pam"
+        api_token_id: "{{ pve_api_token_id }}"
+        api_token_secret: "{{ pve_api_token_secret }}"
         node: "exbasis"
-        vmid: 102                
-        newid: 201                
-        name: "VM"
+        vmid: 102
+        newid: "{{ newid }}"
+        name: "{{ new_vm_name }}"
         clone: true
         full: true
         timeout: 600
