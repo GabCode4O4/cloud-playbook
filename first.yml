@@ -26,6 +26,6 @@
         full: true
         ciuser: "etudiant"
         cipassword: "password123" 
-        sshkeys: "ssh-ed25519 AAAAC3..." 
-        ipconfig0: "ip=dhcp" 
+        ipconfig:
+          ipconfig0: "ip=dhcp"
         state: present
