@@ -22,7 +22,10 @@
         vmid: 102
         newid: "{{ newid }}"
         name: "{{ new_vm_name }}"
-        clone: true
+        clone: true 
         full: true
-        timeout: 600
+        ciuser: "etudiant"
+        cipassword: "password123" 
+        sshkeys: "ssh-ed25519 AAAAC3..." 
+        ipconfig0: "ip=dhcp" 
         state: present
