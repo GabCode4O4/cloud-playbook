@@ -23,7 +23,7 @@
         newid: "{{ newid }}"
         name: "{{ new_vm_name }}"
         clone: true
-        full: true
+        full: false
         timeout: 600
         state: started 
         ciuser: "etudiant"
@@ -35,13 +35,13 @@
       add_host:
         name: "172.16.1.{{ newid }}"
         groups: nouvelles_vms
-        ansible_ssh_common_args: '-o StrictHostKeyChecking=no' # Ignore l'alerte de sécurité SSH
+        ansible_ssh_common_args: '-o StrictHostKeyChecking=no'
 
 - name: Configuration de l'environnement étudiant
-  hosts: nouvelles_vms      # On cible le groupe qu'on vient de créer au-dessus
-  remote_user: "etudiant"   # On se connecte avec le compte Cloud-Init
-  become: true              # On demande les droits administrateur (Sudo)
-  gather_facts: true        # Récupère les infos de l'OS cible
+  hosts: nouvelles_vms      
+  remote_user: "etudiant"   
+  become: true             
+  gather_facts: true       
 
   tasks:
     - name: Attendre que la VM soit démarrée et SSH disponible
