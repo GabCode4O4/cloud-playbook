@@ -19,13 +19,17 @@
         api_token_id: "{{ pve_api_token_id }}"
         api_token_secret: "{{ pve_api_token_secret }}"
         node: "exbasis"
-        vmid: 102
-        newid: "{{ newid }}"
+        
+        # --- Cible (La nouvelle VM) ---
+        vmid: "{{ newid }}"
         name: "{{ new_vm_name }}"
-        clone: true
+        
+        # --- Source (Le Template) ---
+        clone: "VMtest" 
         full: false
-        timeout: 600
-        state: started 
+        state: started
+        
+        # --- Configuration Cloud-Init ---
         ciuser: "etudiant"
         cipassword: "password123"
         ipconfig:
@@ -37,6 +41,9 @@
         groups: nouvelles_vms
         ansible_ssh_common_args: '-o StrictHostKeyChecking=no'
 
+# ==============================================================
+# JEU 2 : NOUVELLE VM (Configuration par SSH)
+# ==============================================================
 - name: Configuration de l'environnement étudiant
   hosts: nouvelles_vms      
   remote_user: "etudiant"   
