@@ -3,8 +3,6 @@
   hosts: all
   gather_facts: false
   
-  # On garde ça pour la sécurité si l'EE est vide, 
-  # mais les variables api_... ne sont plus définies ici !
   tasks:
     - name: Check Python dependencies
       pip:
@@ -13,7 +11,6 @@
 
     - name: Cloner la VM Template
       community.proxmox.proxmox_kvm:
-        # Ces variables seront injectées AUTOMATIQUEMENT par le Credential
         api_host: "{{ pve_api_host }}"
         api_user: "root@pam"
         api_token_id: "{{ pve_api_token_id }}"
@@ -24,6 +21,7 @@
         name: "{{ new_vm_name }}"
         clone: true 
         full: true
+        timeout: 600
         ciuser: "etudiant"
         cipassword: "password123" 
         ipconfig:
