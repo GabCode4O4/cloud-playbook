@@ -20,22 +20,16 @@
         api_token_id: "{{ pve_api_token_id }}"
         api_token_secret: "{{ pve_api_token_secret }}"
         node: "exbasis"
-        
-        # Source
-        vmid: 102              
-        clone: "VMtest"        
-        # Destination
-        newid: "{{ newid }}"   
+        vmid: 102
+        clone: "VMtest"
+        newid: "{{ newid }}"
         name: "{{ new_vm_name }}"
-        full: false            # Clone rapide (2 secondes)
-        
-        state: present         # <--- LE SECRET : On crée, on n'allume pas !
-        
-        # Configuration Cloud-Init
+        full: false
+        state: present
         ciuser: "etudiant"
         cipassword: "password123"
         ipconfig:
-          ipconfig0: "ip=172.16.1.{{ newid }}/24,gw=172.16.1.1" 
+          ipconfig0: "ip=dhcp"
 
     # --- ÉTAPE 2 : ALLUMER LA NOUVELLE VM ---
     - name: Démarrer la nouvelle VM
@@ -45,14 +39,51 @@
         api_token_id: "{{ pve_api_token_id }}"
         api_token_secret: "{{ pve_api_token_secret }}"
         node: "exbasis"
-        vmid: "{{ newid }}"    # On cible uniquement la nouvelle machine
-        state: started         # Et on l'allume !
+        vmid: "{{ newid }}"
+        state: started
+
+    # --- ÉTAPE 3 : RÉCUPÉRER L'IP DE LA NOUVELLE VM ---
+    - name: Récupérer l'IP via l'API Proxmox (qemu-guest-agent)
+      ansible.builtin.uri:
+        url: "https://{{ pve_api_host }}:8006/api2/json/nodes/exbasis/qemu/{{ newid }}/agent/network-get-interfaces"
+        method: GET
+        headers:
+          Authorization: "PVEAPIToken=root@pam!{{ pve_api_token_id }}={{ pve_api_token_secret }}"
+        validate_certs: false
+        status_code: [200, 500]   # 500 tant que l'agent n'a pas démarré
+      register: vm_network
+      until: >
+        vm_network.status == 200 and
+        vm_network.json.data.result is defined and
+        (vm_network.json.data.result
+          | selectattr('name', 'ne', 'lo')
+          | map(attribute='ip-addresses') | list | flatten
+          | selectattr('ip-address-type', 'eq', 'ipv4')
+          | rejectattr('ip-address', 'match', '^127\.')
+          | list | length) > 0
+      retries: 30
+      delay: 10
+
+    - name: Extraire la première IPv4 non-loopback
+      ansible.builtin.set_fact:
+        new_vm_ip: >-
+          {{ (vm_network.json.data.result
+              | selectattr('name', 'ne', 'lo')
+              | map(attribute='ip-addresses') | list | flatten
+              | selectattr('ip-address-type', 'eq', 'ipv4')
+              | rejectattr('ip-address', 'match', '^127\.')
+              | map(attribute='ip-address') | first) }}
+
+    - name: Afficher l'IP récupérée (utile pour l'étudiant)
+      ansible.builtin.debug:
+        msg: "✅ La VM est joignable sur : {{ new_vm_ip }}"
 
     - name: Ajouter la nouvelle VM à l'inventaire temporaire
-      add_host:
-        name: "172.16.1.{{ newid }}"
+      ansible.builtin.add_host:
+        name: "{{ new_vm_ip }}"
         groups: nouvelles_vms
         ansible_ssh_common_args: '-o StrictHostKeyChecking=no'
+
 
 # ==============================================================
 # JEU 2 : NOUVELLE VM (Configuration par SSH)
@@ -60,26 +91,29 @@
 - name: Configuration de l'environnement étudiant
   hosts: nouvelles_vms
   remote_user: "etudiant"
+  become: true
   gather_facts: false
 
   tasks:
-    - name: Attendre que SSH soit dispo
+    - name: Attendre que SSH soit prêt
       wait_for_connection:
-        delay: 15
+        delay: 30
         timeout: 300
 
-    # Bootstrap : on passe par 'su -' car pas de sudo
-    - name: Installer sudo et python3 via su (mot de passe root)
-      raw: |
-        echo '{{ root_password }}' | su -c "apt update && apt install -y sudo python3 && usermod -aG sudo etudiant && echo 'etudiant ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/90-etudiant"
-      register: bootstrap_result
+    - name: Collecter les facts maintenant que SSH est OK
+      ansible.builtin.setup:
 
-    - name: Vérifier que sudo fonctionne maintenant
-      become: true
-      become_method: sudo
-      ansible.builtin.command: whoami
-      register: sudo_test
+    - name: Installer les paquets pour l'étudiant
+      ansible.builtin.apt:
+        name:
+          - git
+          - curl
+          - vim
+          - htop
+          - python3-pip
+        state: present
+        update_cache: true
 
-    - name: Afficher le résultat
-      debug:
-        var: sudo_test.stdout
+    - name: Message final
+      ansible.builtin.debug:
+        msg: "✅ VM étudiante prête sur {{ ansible_default_ipv4.address }}"
