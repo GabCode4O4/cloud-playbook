@@ -12,7 +12,8 @@
         name: proxmoxer
         state: present
 
-    - name: Cloner la VM Template
+    # --- ÉTAPE 1 : CLONER ET CONFIGURER (SANS ALLUMER) ---
+    - name: Cloner la VM Template et injecter Cloud-Init
       community.proxmox.proxmox_kvm:
         api_host: "{{ pve_api_host }}"
         api_user: "root@pam"
@@ -20,20 +21,32 @@
         api_token_secret: "{{ pve_api_token_secret }}"
         node: "exbasis"
         
-        # --- Cible (La nouvelle VM) ---
-        vmid: "{{ newid }}"
+        # Source
+        vmid: 102              
+        clone: "VMtest"        
+        # Destination
+        newid: "{{ newid }}"   
         name: "{{ new_vm_name }}"
+        full: false            # Clone rapide (2 secondes)
         
-        # --- Source (Le Template) ---
-        clone: "VMtest" 
-        full: false
-        state: started
+        state: present         # <--- LE SECRET : On crée, on n'allume pas !
         
-        # --- Configuration Cloud-Init ---
+        # Configuration Cloud-Init
         ciuser: "etudiant"
         cipassword: "password123"
         ipconfig:
           ipconfig0: "ip=172.16.1.{{ newid }}/24,gw=172.16.1.1" 
+
+    # --- ÉTAPE 2 : ALLUMER LA NOUVELLE VM ---
+    - name: Démarrer la nouvelle VM
+      community.proxmox.proxmox_kvm:
+        api_host: "{{ pve_api_host }}"
+        api_user: "root@pam"
+        api_token_id: "{{ pve_api_token_id }}"
+        api_token_secret: "{{ pve_api_token_secret }}"
+        node: "exbasis"
+        vmid: "{{ newid }}"    # On cible uniquement la nouvelle machine
+        state: started         # Et on l'allume !
 
     - name: Ajouter la nouvelle VM à l'inventaire temporaire
       add_host:
