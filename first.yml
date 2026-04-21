@@ -58,32 +58,28 @@
 # JEU 2 : NOUVELLE VM (Configuration par SSH)
 # ==============================================================
 - name: Configuration de l'environnement étudiant
-  hosts: nouvelles_vms      
-  remote_user: "etudiant"   
-  become: false             # <--- ON DESACTIVE SUDO TEMPORAIREMENT
-  gather_facts: false       
+  hosts: nouvelles_vms
+  remote_user: "etudiant"
+  gather_facts: false
 
   tasks:
-    - name: Attendre que la VM soit démarrée et SSH disponible
+    - name: Attendre que SSH soit dispo
       wait_for_connection:
-        delay: 10
+        delay: 15
         timeout: 300
 
-    - name: DIAGNOSTIC 1 - Vérifier qui je suis
-      raw: whoami
-      register: test_user
+    # Bootstrap : on passe par 'su -' car pas de sudo
+    - name: Installer sudo et python3 via su (mot de passe root)
+      raw: |
+        echo '{{ root_password }}' | su -c "apt update && apt install -y sudo python3 && usermod -aG sudo etudiant && echo 'etudiant ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/90-etudiant"
+      register: bootstrap_result
 
-    - name: DIAGNOSTIC 2 - Chercher où est caché sudo
-      raw: whereis sudo
-      register: test_sudo
+    - name: Vérifier que sudo fonctionne maintenant
+      become: true
+      become_method: sudo
+      ansible.builtin.command: whoami
+      register: sudo_test
 
-    - name: DIAGNOSTIC 3 - Afficher le chemin de l'environnement ($PATH)
-      raw: echo $PATH
-      register: test_path
-
-    - name: Afficher les résultats de l'enquête
+    - name: Afficher le résultat
       debug:
-        msg: 
-          - "Je suis connecté en tant que : {{ test_user.stdout_lines[0] }}"
-          - "Le système voit sudo ici : {{ test_sudo.stdout_lines[0] }}"
-          - "Mon $PATH actuel est : {{ test_path.stdout_lines[0] }}"
+        var: sudo_test.stdout
