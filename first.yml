@@ -34,7 +34,7 @@
         state: present
         ciuser: "etudiant"
         cipassword: "password123"
-        net: '{"net0":"virtio,bridge=vmbr0,firewall=1"}' 
+        net: '{"net0":"virtio,bridge=vmbr0,firewall=0"}' 
         ipconfig:
           ipconfig0: "ip=172.16.205.{{ vmid_etudiant }}/16,gw=172.16.1.213"
 
