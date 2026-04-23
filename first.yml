@@ -32,7 +32,7 @@
         # Ajout du paramètre firewall pour l'isolation et correction réseau
         firewall: 1 
         ipconfig:
-          ipconfig0: "ip=172.16.205.{{ vmid_etudiant }}/16,gw=172.16.1.213"
+          ipconfig0: "ip=172.16.205.{{ newid }}/16,gw=172.16.1.213"
 
     # --- ÉTAPE 2 : ALLUMER LA NOUVELLE VM ---
     - name: Démarrer la nouvelle VM
