@@ -3,7 +3,8 @@
 # JEU 1 : PROXMOX (Création de la machine depuis AWX)
 # ==============================================================
 - name: Déploiement Cloud Étudiant - Phase Création
-  hosts: all
+  hosts: localhost
+  connection: local
   gather_facts: false
   
   tasks:
@@ -20,7 +21,7 @@
         api_token_id: "{{ pve_api_token_id }}"
         api_token_secret: "{{ pve_api_token_secret }}"
         node: "exbasis"
-        vmid: 102
+        vmid: 103
         clone: "VMtest"
         newid: "{{ newid }}"
         name: "{{ new_vm_name }}"
@@ -28,8 +29,10 @@
         state: present
         ciuser: "etudiant"
         cipassword: "password123"
+        # Ajout du paramètre firewall pour l'isolation et correction réseau
+        firewall: 1 
         ipconfig:
-          ipconfig0: "ip=dhcp"
+          ipconfig0: "ip=172.16.205.{{ vmid_etudiant }}/16,gw=172.16.1.213"
 
     # --- ÉTAPE 2 : ALLUMER LA NOUVELLE VM ---
     - name: Démarrer la nouvelle VM
@@ -42,45 +45,18 @@
         vmid: "{{ newid }}"
         state: started
 
-    # --- ÉTAPE 3 : RÉCUPÉRER L'IP DE LA NOUVELLE VM ---
-    - name: Récupérer l'IP via l'API Proxmox (qemu-guest-agent)
-      ansible.builtin.uri:
-        url: "https://{{ pve_api_host }}:8006/api2/json/nodes/exbasis/qemu/{{ newid }}/agent/network-get-interfaces"
-        method: GET
-        headers:
-          Authorization: "PVEAPIToken=root@pam!{{ pve_api_token_id }}={{ pve_api_token_secret }}"
-        validate_certs: false
-        status_code: [200, 500]   # 500 tant que l'agent n'a pas démarré
-      register: vm_network
-      until: >
-        vm_network.status == 200 and
-        vm_network.json.data.result is defined and
-        (vm_network.json.data.result
-          | selectattr('name', 'ne', 'lo')
-          | map(attribute='ip-addresses') | list | flatten
-          | selectattr('ip-address-type', 'eq', 'ipv4')
-          | rejectattr('ip-address', 'match', '^127\.')
-          | list | length) > 0
-      retries: 30
-      delay: 10
-
-    - name: Extraire la première IPv4 non-loopback
-      ansible.builtin.set_fact:
-        new_vm_ip: >-
-          {{ (vm_network.json.data.result
-              | selectattr('name', 'ne', 'lo')
-              | map(attribute='ip-addresses') | list | flatten
-              | selectattr('ip-address-type', 'eq', 'ipv4')
-              | rejectattr('ip-address', 'match', '^127\.')
-              | map(attribute='ip-address') | first) }}
-
-    - name: Afficher l'IP récupérée (utile pour l'étudiant)
-      ansible.builtin.debug:
-        msg: "✅ La VM est joignable sur : {{ new_vm_ip }}"
+    # --- ÉTAPE 3 : ATTENDRE LA DISPONIBILITÉ RÉSEAU ---
+    - name: Attendre que le port SSH (22) soit ouvert sur la nouvelle IP
+      ansible.builtin.wait_for:
+        host: "172.16.205.{{ vmid_etudiant }}"
+        port: 22
+        delay: 15
+        timeout: 300
+        state: started
 
     - name: Ajouter la nouvelle VM à l'inventaire temporaire
       ansible.builtin.add_host:
-        name: "{{ new_vm_ip }}"
+        name: "172.16.205.{{ vmid_etudiant }}"
         groups: nouvelles_vms
         ansible_ssh_common_args: '-o StrictHostKeyChecking=no'
 
@@ -95,9 +71,9 @@
   gather_facts: false
 
   tasks:
-    - name: Attendre que SSH soit prêt
+    - name: Attendre que SSH soit totalement prêt
       wait_for_connection:
-        delay: 30
+        delay: 5
         timeout: 300
 
     - name: Collecter les facts maintenant que SSH est OK
