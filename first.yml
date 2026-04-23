@@ -2,18 +2,7 @@
 # ==============================================================
 # JEU 1 : PROXMOX (Création de la machine depuis AWX)
 # ==============================================================
-- name: Déploiement Cloud Étudiant - Phase Création
-  hosts: localhost
-  connection: local
-  gather_facts: false
-  
-  tasks:
-    - name: Installer proxmoxer (le traducteur Python pour l'API)
-      pip:
-        name: proxmoxer
-        state: present
-
-    # --- ÉTAPE 1 : CLONER ET CONFIGURER (SANS ALLUMER) ---
+# --- ÉTAPE 1 : CLONER ET CONFIGURER (SANS ALLUMER) ---
     - name: Cloner la VM Template et injecter Cloud-Init
       community.proxmox.proxmox_kvm:
         api_host: "{{ pve_api_host }}"
@@ -21,7 +10,7 @@
         api_token_id: "{{ pve_api_token_id }}"
         api_token_secret: "{{ pve_api_token_secret }}"
         node: "exbasis"
-        vmid: 103
+        vmid: 102
         clone: "VMtest"
         newid: "{{ newid }}"
         name: "{{ new_vm_name }}"
@@ -29,10 +18,12 @@
         state: present
         ciuser: "etudiant"
         cipassword: "password123"
-        # Ajout du paramètre firewall pour l'isolation et correction réseau
-        firewall: 1 
+        
+        # CORRECTION : Le pare-feu s'active sur la carte réseau (net0) reliée au bridge vmbr0
+        net: '{"net0":"virtio,bridge=vmbr0,firewall=1"}' 
+        
         ipconfig:
-          ipconfig0: "ip=172.16.205.{{ newid }}/16,gw=172.16.1.213"
+          ipconfig0: "ip=172.16.205.{{ vmid_etudiant }}/16,gw=172.16.1.213"
 
     # --- ÉTAPE 2 : ALLUMER LA NOUVELLE VM ---
     - name: Démarrer la nouvelle VM
