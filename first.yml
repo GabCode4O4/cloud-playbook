@@ -11,11 +11,6 @@
   vars:
     vmid_etudiant: "50"                        # L'IP sera 172.16.205.50
     newid: "250"                               # L'ID de la nouvelle VM dans Proxmox
-    new_vm_name: "VM-Etu-50"                   # Le nom de la VM dans l'interface Proxmox
-    pve_api_host: "IP_DE_TON_SERVEUR_PROXMOX"  # Ex: 172.16.180.X
-    pve_api_token_id: "TON_TOKEN_ID"           # Ex: root@pam!awx
-    pve_api_token_secret: "TON_TOKEN_SECRET"   # Ex: aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee
-  # =====================================
   
   tasks:
     - name: Installer proxmoxer (le traducteur Python pour l'API)
@@ -101,3 +96,57 @@
     - name: Message final
       ansible.builtin.debug:
         msg: "✅ VM étudiante prête sur {{ ansible_default_ipv4.address }}"
+
+# ==============================================================
+# JEU 3 : GUACAMOLE (Création des accès web pour l'étudiant)
+# ==============================================================
+- name: Intégration de la VM dans la passerelle Guacamole
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  # === VARIABLES EN DUR POUR LE TEST ===
+  # (À supprimer quand on passera par le formulaire AWX)
+  vars:
+    vmid_etudiant: "50"
+    guac_url: "http://172.16.180.250:8080/guacamole"
+    guac_username: "guacadmin"
+    guac_password: "guacadmin" # Mets ton nouveau mdp si tu l'as changé
+  # =====================================
+
+  tasks:
+    - name: Créer le compte de l'étudiant dans Guacamole
+      maxhq.guacamole.guacamole_user:
+        url: "{{ guac_url }}"
+        username: "{{ guac_username }}"
+        password: "{{ guac_password }}"
+        user_name: "etu_{{ vmid_etudiant }}"
+        user_password: "password123" # Le mdp pour se connecter au portail web
+        state: present
+
+    - name: Créer la connexion SSH vers sa nouvelle VM
+      maxhq.guacamole.guacamole_connection:
+        url: "{{ guac_url }}"
+        username: "{{ guac_username }}"
+        password: "{{ guac_password }}"
+        name: "Connexion_SSH_VM_{{ vmid_etudiant }}"
+        protocol: "ssh"
+        parent_group: "ROOT"
+        parameters:
+          hostname: "172.16.205.{{ vmid_etudiant }}"
+          port: "22"
+          username: "etudiant"
+          password: "password123" # Le mdp Linux (défini dans Cloud-Init)
+          strict_host_key_checking: "false" 
+        state: present
+      register: new_connection
+
+    - name: Autoriser l'étudiant à voir uniquement sa connexion
+      maxhq.guacamole.guacamole_user_permission:
+        url: "{{ guac_url }}"
+        username: "{{ guac_username }}"
+        password: "{{ guac_password }}"
+        user_name: "etu_{{ vmid_etudiant }}"
+        connection_id: "{{ new_connection.connection.identifier }}"
+        permission: "READ"
+        state: present
