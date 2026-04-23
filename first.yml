@@ -6,6 +6,16 @@
   hosts: localhost
   connection: local
   gather_facts: false
+
+  # === VARIABLES EN DUR POUR LE TEST ===
+  vars:
+    vmid_etudiant: "50"                        # L'IP sera 172.16.205.50
+    newid: "250"                               # L'ID de la nouvelle VM dans Proxmox
+    new_vm_name: "VM-Etu-50"                   # Le nom de la VM dans l'interface Proxmox
+    pve_api_host: "IP_DE_TON_SERVEUR_PROXMOX"  # Ex: 172.16.180.X
+    pve_api_token_id: "TON_TOKEN_ID"           # Ex: root@pam!awx
+    pve_api_token_secret: "TON_TOKEN_SECRET"   # Ex: aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee
+  # =====================================
   
   tasks:
     - name: Installer proxmoxer (le traducteur Python pour l'API)
