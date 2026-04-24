@@ -40,6 +40,15 @@
           ipconfig0: "ip=172.16.205.{{ vmid_etudiant }}/16,gw=172.16.1.213"
         force: true
 
+    - name: Regénérer le disque Cloud-Init avec la nouvelle IP
+      ansible.builtin.uri:
+      url: "https://{{ pve_api_host }}:8006/api2/json/nodes/exbasis/qemu/{{ newid }}/cloudinit"
+      method: PUT
+      headers:
+        Authorization: "PVEAPIToken={{ pve_api_token_id }}={{ pve_api_token_secret }}"
+      validate_certs: false
+      status_code: 200
+
     - name: Démarrer la nouvelle VM
       community.proxmox.proxmox_kvm:
         api_host: "{{ pve_api_host }}"
