@@ -9,8 +9,8 @@
 
   # === VARIABLES EN DUR POUR LE TEST ===
   vars:
-    vmid_etudiant: "50"                        # L'IP sera 172.16.205.50
-    newid: "250"                               # L'ID de la nouvelle VM dans Proxmox
+    vmid_etudiant: "50"                      
+    newid: "250"                              
   
   tasks:
     - name: Installer proxmoxer (le traducteur Python pour l'API)
@@ -18,7 +18,6 @@
         name: proxmoxer
         state: present
 
-    # --- ÉTAPE 1 : CLONER ET CONFIGURER (SANS ALLUMER) ---
     - name: Cloner la VM Template et injecter Cloud-Init
       community.proxmox.proxmox_kvm:
         api_host: "{{ pve_api_host }}"
@@ -34,11 +33,11 @@
         state: present
         ciuser: "etudiant"
         cipassword: "password123"
-        net: '{"net0":"virtio,bridge=vmbr0,firewall=0"}' 
+        net: '{"net0":"virtio,bridge=vmbr0,firewall=0"}'
         ipconfig:
           ipconfig0: "ip=172.16.205.{{ vmid_etudiant }}/16,gw=172.16.1.213"
+        force: true
 
-    # --- ÉTAPE 2 : ALLUMER LA NOUVELLE VM ---
     - name: Démarrer la nouvelle VM
       community.proxmox.proxmox_kvm:
         api_host: "{{ pve_api_host }}"
@@ -49,10 +48,10 @@
         vmid: "{{ newid }}"
         state: started
 
-    # --- ÉTAPE 3 : ATTENDRE LA DISPONIBILITÉ RÉSEAU ---
+  
     - name: Attendre que le port SSH (22) soit ouvert sur la nouvelle IP
       ansible.builtin.wait_for:
-        host: "172.16.205.{{ vmid_etudiant }}"
+        host: "172.16.205.200"
         port: 22
         delay: 15
         timeout: 300
@@ -60,7 +59,7 @@
 
     - name: Ajouter la nouvelle VM à l'inventaire temporaire
       ansible.builtin.add_host:
-        name: "172.16.205.{{ vmid_etudiant }}"
+        name: "172.16.205.200"
         groups: nouvelles_vms
         ansible_ssh_common_args: '-o StrictHostKeyChecking=no'
 
@@ -77,7 +76,7 @@
     - name: Attendre que SSH soit totalement prêt
       wait_for_connection:
         delay: 5
-        timeout: 300
+        timeout: 600
 
     - name: Collecter les facts maintenant que SSH est OK
       ansible.builtin.setup:
@@ -105,14 +104,11 @@
   connection: local
   gather_facts: false
 
-  # === VARIABLES EN DUR POUR LE TEST ===
-  # (À supprimer quand on passera par le formulaire AWX)
   vars:
     vmid_etudiant: "50"
     guac_url: "http://172.16.180.250:8080/guacamole"
     guac_admin: "guacadmin"
-    guac_pass: "guacadmin" # Mets ton nouveau mdp si tu l'as changé
-  # =====================================
+    guac_pass: "guacadmin" 
 
   tasks:
     - name: 1. Créer la connexion SSH vers la nouvelle VM
