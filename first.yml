@@ -11,7 +11,7 @@
   vars:
     vmid_etudiant: "50"                      
     newid: "250"
-    new_vm_name: "VM_Student_{{ vmid_etudiant }}"                              
+    new_vm_name: "VM-{{ vmid_etudiant }}"                              
   
   tasks:
     - name: Installer proxmoxer (le traducteur Python pour l'API)
@@ -29,6 +29,7 @@
         vmid: 106
         clone: "VMtest"
         newid: "{{ newid }}"
+        validate_certs: false
         name: "{{ new_vm_name }}"
         full: false
         state: present
