@@ -7,7 +7,6 @@
   connection: local
   gather_facts: false
 
-  # === VARIABLES EN DUR POUR LE TEST ===
   vars:
     vmid_etudiant: "50"                      
     newid: "250"
@@ -42,12 +41,12 @@
 
     - name: Regénérer le disque Cloud-Init avec la nouvelle IP
       ansible.builtin.uri:
-      url: "https://{{ pve_api_host }}:8006/api2/json/nodes/exbasis/qemu/{{ newid }}/cloudinit"
-      method: PUT
-      headers:
-        Authorization: "PVEAPIToken={{ pve_api_token_id }}={{ pve_api_token_secret }}"
-      validate_certs: false
-      status_code: 200
+        url: "https://{{ pve_api_host }}:8006/api2/json/nodes/exbasis/qemu/{{ newid }}/cloudinit"
+        method: PUT
+        headers:
+          Authorization: "PVEAPIToken={{ pve_api_token_id }}={{ pve_api_token_secret }}"
+        validate_certs: false
+        status_code: 200
 
     - name: Démarrer la nouvelle VM
       community.proxmox.proxmox_kvm:
@@ -57,12 +56,12 @@
         api_token_secret: "{{ pve_api_token_secret }}"
         node: "exbasis"
         vmid: "{{ newid }}"
+        validate_certs: false
         state: started
 
-  
     - name: Attendre que le port SSH (22) soit ouvert sur la nouvelle IP
       ansible.builtin.wait_for:
-        host: "172.16.205.{{ vmid_etudiant }}"   # ✅ utilise la variable
+        host: "172.16.205.{{ vmid_etudiant }}"
         port: 22
         delay: 15
         timeout: 300
@@ -70,7 +69,7 @@
 
     - name: Ajouter la nouvelle VM à l'inventaire temporaire
       ansible.builtin.add_host:
-        name: "172.16.205.{{ vmid_etudiant }}"   # ✅ idem
+        name: "172.16.205.{{ vmid_etudiant }}"
         groups: nouvelles_vms
         ansible_ssh_common_args: '-o StrictHostKeyChecking=no'
 
@@ -119,7 +118,7 @@
     vmid_etudiant: "50"
     guac_url: "http://172.16.180.250:8080/guacamole"
     guac_admin: "guacadmin"
-    guac_pass: "guacadmin" 
+    guac_pass: "guacadmin"
 
   tasks:
     - name: 1. Créer la connexion SSH vers la nouvelle VM
@@ -143,7 +142,7 @@
         auth_password: "{{ guac_pass }}"
         username: "etu_{{ vmid_etudiant }}"
         password: "password123"
-        allowed_connections: 
+        allowed_connections:
           - "Connexion_SSH_VM_{{ vmid_etudiant }}"
         validate_certs: false
         state: present
