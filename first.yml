@@ -44,7 +44,7 @@
         url: "https://{{ pve_api_host }}:8006/api2/json/nodes/exbasis/qemu/{{ newid }}/cloudinit"
         method: PUT
         headers:
-          Authorization: "PVEAPIToken={{ pve_api_token_id }}={{ pve_api_token_secret }}"
+          Authorization: "PVEAPIToken=root@pam!{{ pve_api_token_id }}={{ pve_api_token_secret }}"
         validate_certs: false
         status_code: 200
 
