@@ -10,7 +10,8 @@
   # === VARIABLES EN DUR POUR LE TEST ===
   vars:
     vmid_etudiant: "50"                      
-    newid: "250"                              
+    newid: "250"
+    new_vm_name: "VM_Student_{{ vmid_etudiant }}"                              
   
   tasks:
     - name: Installer proxmoxer (le traducteur Python pour l'API)
