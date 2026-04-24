@@ -41,13 +41,13 @@
 
     - name: Injecter l'IP dans la config du clone
       ansible.builtin.command:
-        cmd: "qm set {{ newid }} --ipconfig0 ip=172.16.205.{{ vmid_etudiant }}/16,gw=172.16.1.213"
+        cmd: "/usr/sbin/qm set {{ newid }} --ipconfig0 ip=172.16.205.{{ vmid_etudiant }}/16,gw=172.16.1.213"
       delegate_to: "{{ pve_api_host }}"
       remote_user: root
 
     - name: Regénérer le disque Cloud-Init
       ansible.builtin.command:
-        cmd: "qm cloudinit update {{ newid }}"
+        cmd: "/usr/sbin/qm cloudinit update {{ newid }}"
       delegate_to: "{{ pve_api_host }}"
       remote_user: root
 
