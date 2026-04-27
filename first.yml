@@ -106,9 +106,8 @@
         port: 3389
         username: "etu"
         password: "password123"
-        parameters:
-          security: "nla"
-          ignore-cert: "true"
+        rdp_security: "nla"              
+        rdp_ignore_server_certs: true   
         state: present
       when: "'Windows' in choix_os"
 
