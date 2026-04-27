@@ -35,8 +35,8 @@
         name: "VM-{{ vmid_etudiant }}-LINUX"
         full: false
         state: present
-        ciuser: "root"
-        cipassword: "password123"
+        ciuser: "etu"
+        cipassword: "etu"
         net: '{"net0":"virtio,bridge=vmbr0,firewall=0"}'
         force: true
       when: "'Linux' in choix_os"
@@ -103,7 +103,7 @@
         full: false
         state: present
         ciuser: "etu"
-        cipassword: "password123"
+        cipassword: "etu"
         net: '{"net0":"virtio,bridge=vmbr0,firewall=0"}'
         force: true
       when: "'Windows' in choix_os"
