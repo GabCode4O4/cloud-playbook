@@ -166,8 +166,8 @@
         protocol: "ssh"
         hostname: "172.16.205.{{ vmid_etudiant }}"
         port: 22
-        username: "root"
-        password: "password123"
+        username: "etu"
+        password: "etu"
         validate_certs: false
         state: present
       when: "'Linux' in choix_os"
@@ -182,7 +182,7 @@
         hostname: "172.16.206.{{ vmid_etudiant }}"
         port: 3389
         username: "etu"
-        password: "password123"
+        password: "etu"
         rdp_security: "nla"
         rdp_ignore_server_certs: true
         validate_certs: false
@@ -195,7 +195,7 @@
         auth_username: "{{ guac_admin }}"
         auth_password: "{{ guac_pass }}"
         username: "etu_{{ vmid_etudiant }}"
-        password: "password123"
+        password: "etu"
         allowed_connections:
           - "SSH_Linux_{{ vmid_etudiant }}"
           - "RDP_Windows_{{ vmid_etudiant }}"
