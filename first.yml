@@ -88,7 +88,6 @@
         ansible_ssh_user: "etu"
         ansible_ssh_pass: "etu"
         ansible_become_pass: "etu"
-        ansible_become_exe: "/usr/bin/sudo"
         ansible_ssh_common_args: '-o StrictHostKeyChecking=no'
 
 # ==============================================================
