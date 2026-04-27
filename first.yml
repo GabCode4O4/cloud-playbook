@@ -103,7 +103,7 @@
 
   tasks:
     - name: Attendre la fin de la configuration Cloud-Init
-      ansible.builtin.raw: cloud-init status --wait
+      ansible.builtin.command: /usr/bin/cloud-init status --wait
       changed_when: false
 
     - name: Installer Docker
