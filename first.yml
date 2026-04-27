@@ -32,7 +32,7 @@
         name: "{{ new_vm_name }}"
         full: false
         state: present
-        ciuser: "etudiant"
+        ciuser: "root"
         cipassword: "password123"
         net: '{"net0":"virtio,bridge=vmbr0,firewall=0"}'
         ipconfig:
@@ -92,18 +92,40 @@
 # ==============================================================
 - name: Configuration de l'environnement étudiant
   hosts: nouvelles_vms
-  remote_user: "etudiant"
-  become: true
+  remote_user: "root"
+  become: false
   gather_facts: false
 
   vars:
     ansible_ssh_pass: "password123"
-    ansible_become_pass: "password123"
     ansible_ssh_common_args: '-o StrictHostKeyChecking=no -o PasswordAuthentication=yes'
 
   tasks:
     - name: Collecter les facts
       ansible.builtin.setup:
+
+    - name: Installer sudo et les paquets nécessaires
+      ansible.builtin.apt:
+        name:
+          - sudo
+        state: present
+        update_cache: true
+
+    - name: Créer le user etudiant
+      ansible.builtin.user:
+        name: etudiant
+        password: "{{ 'password123' | password_hash('sha512') }}"
+        shell: /bin/bash
+        create_home: true
+        groups: sudo
+        append: true
+
+    - name: Autoriser etudiant sans mot de passe sudo
+      ansible.builtin.lineinfile:
+        path: /etc/sudoers.d/etudiant
+        line: "etudiant ALL=(ALL) NOPASSWD:ALL"
+        create: true
+        mode: '0440'
 
     - name: Message final
       ansible.builtin.debug:
