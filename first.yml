@@ -1,6 +1,6 @@
 ---
 # ==============================================================
-# JEU 1 : PROXMOX (Création de la machine depuis AWX)
+# JEU 1 : PROXMOX (Création de la machine)
 # ==============================================================
 - name: Déploiement Cloud Étudiant - Phase Création
   hosts: localhost
@@ -8,17 +8,22 @@
   gather_facts: false
 
   vars:
+    # Variables de base
     vmid_etudiant: "50"                      
     newid: "250"
-    new_vm_name: "VM-{{ vmid_etudiant }}"                              
+    new_vm_name: "VM-{{ vmid_etudiant }}"
+    
+    # Variables qui seront écrasées par le Survey AWX (valeurs par défaut ici)
+    vm_ram: 2048
+    extra_services: [] # Ex venant d'AWX : ["Docker", "Apache", "MySQL"]
   
   tasks:
-    - name: Installer proxmoxer (le traducteur Python pour l'API)
+    - name: Installer proxmoxer
       pip:
         name: proxmoxer
         state: present
 
-    - name: Cloner la VM Template et injecter Cloud-Init
+    - name: Cloner la VM Template et définir les ressources
       community.proxmox.proxmox_kvm:
         api_host: "{{ pve_api_host }}"
         api_user: "root@pam"
@@ -32,6 +37,7 @@
         name: "{{ new_vm_name }}"
         full: false
         state: present
+        memory: "{{ vm_ram }}" # <-- Paramètre dynamique issu d'AWX
         ciuser: "root"
         cipassword: "password123"
         net: '{"net0":"virtio,bridge=vmbr0,firewall=0"}'
@@ -71,7 +77,7 @@
         validate_certs: false
         state: started
 
-    - name: Attendre que le port SSH (22) soit ouvert sur la nouvelle IP
+    - name: Attendre l'ouverture du port SSH
       ansible.builtin.wait_for:
         host: "172.16.205.{{ vmid_etudiant }}"
         port: 22
@@ -79,8 +85,43 @@
         timeout: 300
         state: started
 
+    - name: Ajouter la VM à l'inventaire temporaire pour configuration
+      ansible.builtin.add_host:
+        name: "172.16.205.{{ vmid_etudiant }}"
+        groups: nouvelles_vms
+        ansible_ssh_user: "etu"
+        ansible_ssh_pass: "etu"
+        ansible_become_pass: "etu"
+        ansible_ssh_common_args: '-o StrictHostKeyChecking=no'
+
 # ==============================================================
-# JEU 3 : GUACAMOLE (Création des accès web pour l'étudiant)
+# JEU 2 : PERSONNALISATION OS (Installation à la volée)
+# ==============================================================
+- name: Configuration des services optionnels
+  hosts: nouvelles_vms
+  become: true # Utilise sudo avec le mdp défini au-dessus
+  gather_facts: false
+
+  tasks:
+    - name: Mettre à jour APT (uniquement si des services sont demandés)
+      ansible.builtin.raw: apt-get update
+      when: extra_services | length > 0
+      changed_when: false
+
+    - name: Installer Docker
+      ansible.builtin.raw: apt-get install -y docker.io
+      when: "'Docker' in extra_services"
+
+    - name: Installer Apache
+      ansible.builtin.raw: apt-get install -y apache2
+      when: "'Apache' in extra_services"
+
+    - name: Installer MariaDB (MySQL)
+      ansible.builtin.raw: apt-get install -y mariadb-server
+      when: "'MySQL' in extra_services"
+
+# ==============================================================
+# JEU 3 : GUACAMOLE (Création des accès web)
 # ==============================================================
 - name: Intégration de la VM dans la passerelle Guacamole
   hosts: localhost
