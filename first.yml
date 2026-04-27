@@ -6,20 +6,17 @@
   hosts: localhost
   connection: local
   gather_facts: false
-- name: "Installer la dépendance proxmoxer"
-        ansible.builtin.pip:
-          name: proxmoxer
-          state: present
 
   vars:
-    # Les variables vmid_etudiant (int) et choix_os (list) 
-    # sont injectées dynamiquement par le Survey AWX.
-    
-    # Configuration des IDs de vos templates
-    template_linux_id: 106
-    template_windows_id: 110
+    template_linux_id: 103
+    template_windows_id: 106
 
   tasks:
+    - name: "Installer la dépendance proxmoxer"
+      ansible.builtin.pip:
+        name: proxmoxer
+        state: present
+
     # --- SECTION LINUX ---
     - name: "[Linux] Cloner le template Ubuntu"
       community.proxmox.proxmox_kvm:
@@ -53,7 +50,6 @@
         clone: "WIN10-TEMPLATE"
         full: false
         validate_certs: false
-        # Nécessite Cloudbase-Init installé sur le template
         ipconfig:
           ipconfig0: "ip=172.16.206.{{ vmid_etudiant }}/16,gw=172.16.1.213"
         state: started
@@ -111,7 +107,6 @@
         auth_password: "{{ guac_pass }}"
         username: "etu_{{ vmid_etudiant }}"
         password: "password_par_defaut"
-        # On liste les deux, Guacamole fera le lien si elles existent
         allowed_connections:
           - "SSH_Linux_{{ vmid_etudiant }}"
           - "RDP_Windows_{{ vmid_etudiant }}"
