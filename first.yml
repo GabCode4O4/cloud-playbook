@@ -8,8 +8,8 @@
   gather_facts: false
 
   vars:
-    template_linux_id: 103
-    template_windows_id: 106
+    template_linux_id: 106
+    template_windows_id: 103
 
   tasks:
     - name: "Installer la dépendance proxmoxer"
