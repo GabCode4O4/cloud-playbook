@@ -6,6 +6,10 @@
   hosts: localhost
   connection: local
   gather_facts: false
+- name: "Installer la dépendance proxmoxer"
+        ansible.builtin.pip:
+          name: proxmoxer
+          state: present
 
   vars:
     # Les variables vmid_etudiant (int) et choix_os (list) 
