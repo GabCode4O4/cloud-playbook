@@ -93,17 +93,34 @@
 - name: Configuration de l'environnement étudiant
   hosts: nouvelles_vms
   remote_user: "etudiant"
-  become: true
+  become: false        # ← désactiver globalement
   gather_facts: false
 
   vars:
     ansible_ssh_pass: "password123"
-    ansible_become_pass: "password123"
     ansible_ssh_common_args: '-o StrictHostKeyChecking=no -o PasswordAuthentication=yes'
 
   tasks:
-    - name: Collecter les facts maintenant que SSH est OK
+    - name: Attendre que SSH soit totalement prêt
+      ansible.builtin.wait_for:
+        host: "{{ inventory_hostname }}"
+        port: 22
+        delay: 5
+        timeout: 600
+        state: started
+      delegate_to: localhost
+
+    - name: Installer sudo en premier
+      ansible.builtin.raw: "apt-get install -y sudo"
+      become: true
+      become_method: su
+      become_user: root
+      vars:
+        ansible_become_pass: "password123"
+
+    - name: Collecter les facts
       ansible.builtin.setup:
+      become: true
 
     - name: Installer les paquets pour l'étudiant
       ansible.builtin.apt:
