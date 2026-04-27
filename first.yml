@@ -25,7 +25,7 @@
         api_token_id: "{{ pve_api_token_id }}"
         api_token_secret: "{{ pve_api_token_secret }}"
         node: "exbasis"
-        vmid: 103
+        vmid: 106
         clone: "VMtest"
         newid: "{{ newid }}"
         validate_certs: false
@@ -93,45 +93,17 @@
 - name: Configuration de l'environnement étudiant
   hosts: nouvelles_vms
   remote_user: "etudiant"
-  become: false        # ← désactiver globalement
+  become: true
   gather_facts: false
 
   vars:
     ansible_ssh_pass: "password123"
+    ansible_become_pass: "password123"
     ansible_ssh_common_args: '-o StrictHostKeyChecking=no -o PasswordAuthentication=yes'
 
   tasks:
-    - name: Attendre que SSH soit totalement prêt
-      ansible.builtin.wait_for:
-        host: "{{ inventory_hostname }}"
-        port: 22
-        delay: 5
-        timeout: 600
-        state: started
-      delegate_to: localhost
-
-    - name: Installer sudo en premier
-      ansible.builtin.raw: "apt-get install -y sudo"
-      become: true
-      become_method: su
-      become_user: root
-      vars:
-        ansible_become_pass: "password123"
-
     - name: Collecter les facts
       ansible.builtin.setup:
-      become: true
-
-    - name: Installer les paquets pour l'étudiant
-      ansible.builtin.apt:
-        name:
-          - git
-          - curl
-          - vim
-          - htop
-          - python3-pip
-        state: present
-        update_cache: true
 
     - name: Message final
       ansible.builtin.debug:
