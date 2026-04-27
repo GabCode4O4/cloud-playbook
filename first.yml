@@ -97,10 +97,13 @@
   hosts: nouvelles_vms
   gather_facts: false
   become: false
+  environment:
+    # On force le système à chercher les commandes dans les dossiers standards
+    PATH: "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 
   tasks:
     - name: Attendre la fin de la configuration Cloud-Init
-      ansible.builtin.raw: /usr/bin/cloud-init status --wait
+      ansible.builtin.raw: cloud-init status --wait
       changed_when: false
 
     - name: Installer Docker
