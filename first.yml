@@ -101,6 +101,10 @@
     ansible_ssh_common_args: '-o StrictHostKeyChecking=no -o PasswordAuthentication=yes'
 
   tasks:
+    - name: Bootstraper python3-apt via raw
+      ansible.builtin.raw: apt-get update && apt-get install -y python3-apt
+      changed_when: false
+
     - name: Collecter les facts
       ansible.builtin.setup:
 
@@ -130,7 +134,6 @@
     - name: Message final
       ansible.builtin.debug:
         msg: "✅ VM étudiante prête sur {{ ansible_default_ipv4.address }}"
-
 # ==============================================================
 # JEU 3 : GUACAMOLE (Création des accès web pour l'étudiant)
 # ==============================================================
