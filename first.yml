@@ -103,8 +103,8 @@
         protocol: "ssh"
         hostname: "172.16.205.{{ vmid_etudiant }}"
         port: 22
-        username: "root"
-        password: "password123"
+        username: "etu"
+        password: "etu"
         validate_certs: false
         state: present
 
