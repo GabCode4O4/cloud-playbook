@@ -36,7 +36,7 @@
         state: started
       when: "'Linux' in choix_os"
 
-    # --- SECTION WINDOWS ---
+# --- SECTION WINDOWS ---
     - name: "[Windows] Cloner le template Windows 10"
       community.proxmox.proxmox_kvm:
         api_host: "{{ pve_api_host }}"
@@ -44,15 +44,27 @@
         api_token_id: "{{ pve_api_token_id }}"
         api_token_secret: "{{ pve_api_token_secret }}"
         node: "exbasis"
-        vmid: "{{ template_windows_id }}"
-        newid: "300{{ vmid_etudiant }}"
+        vmid: "{{ template_windows_id }}"     # ID du template (110)
+        newid: "300{{ vmid_etudiant }}"        # ID de la nouvelle VM
         name: "VM-{{ vmid_etudiant }}-WIN"
         clone: "WIN10-TEMPLATE"
         full: false
         validate_certs: false
         ipconfig:
           ipconfig0: "ip=172.16.206.{{ vmid_etudiant }}/16,gw=172.16.1.213"
+        state: present                         # On s'assure juste qu'elle est créée
+      when: "'Windows' in choix_os"
+
+    - name: "[Windows] Démarrer la nouvelle VM Windows"
+      community.proxmox.proxmox_kvm:
+        api_host: "{{ pve_api_host }}"
+        api_user: "root@pam"
+        api_token_id: "{{ pve_api_token_id }}"
+        api_token_secret: "{{ pve_api_token_secret }}"
+        node: "exbasis"
+        vmid: "300{{ vmid_etudiant }}"         # ON CIBLE L'ID DE LA NOUVELLE VM ICI
         state: started
+        validate_certs: false
       when: "'Windows' in choix_os"
 
 # ==============================================================
