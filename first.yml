@@ -1,78 +1,64 @@
 ---
 # ==============================================================
-# JEU 1 : PROXMOX - Déploiement des infrastructures
+# PHASE 1 : PROXMOX - Création des machines à la demande
 # ==============================================================
-- name: Déploiement Multi-VM Étudiant Dynamique
+- name: Déploiement Infrastructure Étudiant
   hosts: localhost
   connection: local
   gather_facts: false
 
   vars:
-    templates_config:
-      linux:
-        vmid_source: 106
-        prefix_id: "200"
-        net_prefix: "205"
-        suffixe: "L"
-      windows:
-        vmid_source: 110
-        prefix_id: "300"
-        net_prefix: "206"
-        suffixe: "W"
+    # Les variables vmid_etudiant (int) et choix_os (list) 
+    # sont injectées dynamiquement par le Survey AWX.
+    
+    # Configuration des IDs de vos templates
+    template_linux_id: 106
+    template_windows_id: 110
 
   tasks:
-    - name: "Clonage et Configuration : VM Linux"
+    # --- SECTION LINUX ---
+    - name: "[Linux] Cloner le template Ubuntu"
       community.proxmox.proxmox_kvm:
         api_host: "{{ pve_api_host }}"
         api_user: "root@pam"
         api_token_id: "{{ pve_api_token_id }}"
         api_token_secret: "{{ pve_api_token_secret }}"
         node: "exbasis"
-        vmid: "{{ templates_config.linux.vmid_source }}"
-        newid: "{{ templates_config.linux.prefix_id }}{{ vmid_etudiant }}"
-        name: "VM-{{ vmid_etudiant }}-{{ templates_config.linux.suffixe }}"
+        vmid: "{{ template_linux_id }}"
+        newid: "200{{ vmid_etudiant }}"
+        name: "VM-{{ vmid_etudiant }}-LINUX"
         clone: "VMtest"
         full: false
-        state: present
-        ipconfig:
-          ipconfig0: "ip=172.16.{{ templates_config.linux.net_prefix }}.{{ vmid_etudiant }}/16,gw=172.16.1.213"
         validate_certs: false
+        ipconfig:
+          ipconfig0: "ip=172.16.205.{{ vmid_etudiant }}/16,gw=172.16.1.213"
+        state: started
+      when: "'Linux' in choix_os"
 
-    - name: "Clonage et Configuration : VM Windows"
+    # --- SECTION WINDOWS ---
+    - name: "[Windows] Cloner le template Windows 10"
       community.proxmox.proxmox_kvm:
         api_host: "{{ pve_api_host }}"
         api_user: "root@pam"
         api_token_id: "{{ pve_api_token_id }}"
         api_token_secret: "{{ pve_api_token_secret }}"
         node: "exbasis"
-        vmid: "{{ templates_config.windows.vmid_source }}"
-        newid: "{{ templates_config.windows.prefix_id }}{{ vmid_etudiant }}"
-        name: "VM-{{ vmid_etudiant }}-{{ templates_config.windows.suffixe }}"
+        vmid: "{{ template_windows_id }}"
+        newid: "300{{ vmid_etudiant }}"
+        name: "VM-{{ vmid_etudiant }}-WIN"
         clone: "WIN10-TEMPLATE"
         full: false
-        state: present
+        validate_certs: false
+        # Nécessite Cloudbase-Init installé sur le template
         ipconfig:
-          ipconfig0: "ip=172.16.{{ templates_config.windows.net_prefix }}.{{ vmid_etudiant }}/16,gw=172.16.1.213"
-        validate_certs: false
-
-    - name: Démarrage des machines
-      community.proxmox.proxmox_kvm:
-        api_host: "{{ pve_api_host }}"
-        api_user: "root@pam"
-        api_token_id: "{{ pve_api_token_id }}"
-        api_token_secret: "{{ pve_api_token_secret }}"
-        node: "exbasis"
-        vmid: "{{ item }}"
+          ipconfig0: "ip=172.16.206.{{ vmid_etudiant }}/16,gw=172.16.1.213"
         state: started
-        validate_certs: false
-      loop:
-        - "{{ templates_config.linux.prefix_id }}{{ vmid_etudiant }}"
-        - "{{ templates_config.windows.prefix_id }}{{ vmid_etudiant }}"
+      when: "'Windows' in choix_os"
 
 # ==============================================================
-# JEU 2 : GUACAMOLE - Configuration des accès Web
+# PHASE 2 : GUACAMOLE - Configuration des accès distants
 # ==============================================================
-- name: Intégration Guacamole (SSH & RDP)
+- name: Configuration de la passerelle Guacamole
   hosts: localhost
   connection: local
   gather_facts: false
@@ -83,25 +69,26 @@
     guac_pass: "guacadmin"
 
   tasks:
-    - name: 1. Créer la connexion SSH (Linux)
+    - name: "[Guacamole] Créer la connexion SSH pour Linux"
       scicore.guacamole.guacamole_connection:
         base_url: "{{ guac_url }}"
         auth_username: "{{ guac_admin }}"
         auth_password: "{{ guac_pass }}"
-        connection_name: "SSH_Linux_Etu_{{ vmid_etudiant }}"
+        connection_name: "SSH_Linux_{{ vmid_etudiant }}"
         protocol: "ssh"
         hostname: "172.16.205.{{ vmid_etudiant }}"
         port: 22
         username: "etu"
         password: "password123"
         state: present
+      when: "'Linux' in choix_os"
 
-    - name: 2. Créer la connexion RDP (Windows)
+    - name: "[Guacamole] Créer la connexion RDP pour Windows"
       scicore.guacamole.guacamole_connection:
         base_url: "{{ guac_url }}"
         auth_username: "{{ guac_admin }}"
         auth_password: "{{ guac_pass }}"
-        connection_name: "RDP_Windows_Etu_{{ vmid_etudiant }}"
+        connection_name: "RDP_Windows_{{ vmid_etudiant }}"
         protocol: "rdp"
         hostname: "172.16.206.{{ vmid_etudiant }}"
         port: 3389
@@ -111,15 +98,17 @@
           security: "nla"
           ignore-cert: "true"
         state: present
+      when: "'Windows' in choix_os"
 
-    - name: 3. Créer le compte utilisateur et lier les deux machines
+    - name: "[Guacamole] Créer/Mettre à jour le compte étudiant"
       scicore.guacamole.guacamole_user:
         base_url: "{{ guac_url }}"
         auth_username: "{{ guac_admin }}"
         auth_password: "{{ guac_pass }}"
         username: "etu_{{ vmid_etudiant }}"
         password: "password_par_defaut"
+        # On liste les deux, Guacamole fera le lien si elles existent
         allowed_connections:
-          - "SSH_Linux_Etu_{{ vmid_etudiant }}"
-          - "RDP_Windows_Etu_{{ vmid_etudiant }}"
+          - "SSH_Linux_{{ vmid_etudiant }}"
+          - "RDP_Windows_{{ vmid_etudiant }}"
         state: present
