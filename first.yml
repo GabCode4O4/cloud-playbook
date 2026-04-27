@@ -79,63 +79,6 @@
         timeout: 300
         state: started
 
-    - name: Ajouter la nouvelle VM à l'inventaire temporaire
-      ansible.builtin.add_host:
-        name: "172.16.205.{{ vmid_etudiant }}"
-        groups: nouvelles_vms
-        ansible_ssh_common_args: '-o StrictHostKeyChecking=no -o PasswordAuthentication=yes'
-        ansible_ssh_pass: "password123"
-        ansible_become_pass: "password123"
-
-# ==============================================================
-# JEU 2 : NOUVELLE VM (Configuration par SSH)
-# ==============================================================
-- name: Configuration de l'environnement étudiant
-  hosts: nouvelles_vms
-  remote_user: "root"
-  become: false
-  gather_facts: false
-
-  vars:
-    ansible_ssh_pass: "password123"
-    ansible_ssh_common_args: '-o StrictHostKeyChecking=no -o PasswordAuthentication=yes'
-
-  tasks:
-    - name: Attendre la fin de Cloud-Init et Bootstraper python3-apt via raw
-      ansible.builtin.raw: |
-        /usr/bin/cloud-init status --wait
-        /usr/bin/apt-get update && /usr/bin/apt-get install -y python3-apt
-      changed_when: false
-
-    - name: Collecter les facts
-      ansible.builtin.setup:
-
-    - name: Installer sudo et les paquets nécessaires
-      ansible.builtin.apt:
-        name:
-          - sudo
-        state: present
-        update_cache: true
-
-    - name: Créer le user etudiant
-      ansible.builtin.user:
-        name: etudiant
-        password: "{{ 'password123' | password_hash('sha512') }}"
-        shell: /bin/bash
-        create_home: true
-        groups: sudo
-        append: true
-
-    - name: Autoriser etudiant sans mot de passe sudo
-      ansible.builtin.lineinfile:
-        path: /etc/sudoers.d/etudiant
-        line: "etudiant ALL=(ALL) NOPASSWD:ALL"
-        create: true
-        mode: '0440'
-
-    - name: Message final
-      ansible.builtin.debug:
-        msg: "✅ VM étudiante prête sur {{ ansible_default_ipv4.address }}"
 # ==============================================================
 # JEU 3 : GUACAMOLE (Création des accès web pour l'étudiant)
 # ==============================================================
@@ -160,7 +103,7 @@
         protocol: "ssh"
         hostname: "172.16.205.{{ vmid_etudiant }}"
         port: 22
-        username: "etudiant"
+        username: "root"
         password: "password123"
         validate_certs: false
         state: present
