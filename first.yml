@@ -101,7 +101,7 @@
     ansible_become_pass: "password123"
     ansible_ssh_common_args: '-o StrictHostKeyChecking=no -o PasswordAuthentication=yes'
 
- tasks:
+  tasks:
     - name: Attendre que SSH soit totalement prêt
       ansible.builtin.wait_for:
         host: "{{ inventory_hostname }}"
