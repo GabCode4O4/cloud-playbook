@@ -9,12 +9,9 @@
 
   vars:
     # Variables de base
-    vmid_etudiant: "50"                      
-    newid: "250"
+    vmid_etudiant: "99"                      
+    newid: "299"
     new_vm_name: "VM-{{ vmid_etudiant }}"
-    
-    # Variables qui seront écrasées par le Survey AWX (valeurs par défaut ici)
-    vm_ram: 2048
     extra_services: [] # Ex venant d'AWX : ["Docker", "Apache", "MySQL"]
   
   tasks:
@@ -37,7 +34,6 @@
         name: "{{ new_vm_name }}"
         full: false
         state: present
-        memory: "{{ vm_ram }}" # <-- Paramètre dynamique issu d'AWX
         ciuser: "root"
         cipassword: "password123"
         net: '{"net0":"virtio,bridge=vmbr0,firewall=0"}'
