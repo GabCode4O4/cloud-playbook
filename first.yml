@@ -1,6 +1,6 @@
 ---
 # ==============================================================
-# JEU 1 : PROXMOX (Création de la machine)
+# JEU 1 : PROXMOX (Création de la machine depuis AWX)
 # ==============================================================
 - name: Déploiement Cloud Étudiant - Phase Création
   hosts: localhost
@@ -8,19 +8,17 @@
   gather_facts: false
 
   vars:
-    # Variables de base
-    vmid_etudiant: "99"                      
-    newid: "299"
-    new_vm_name: "VM-{{ vmid_etudiant }}"
-    extra_services: [] # Ex venant d'AWX : ["Docker", "Apache", "MySQL"]
+    vmid_etudiant: "50"                      
+    newid: "250"
+    new_vm_name: "VM-{{ vmid_etudiant }}"                              
   
   tasks:
-    - name: Installer proxmoxer
+    - name: Installer proxmoxer (le traducteur Python pour l'API)
       pip:
         name: proxmoxer
         state: present
 
-    - name: Cloner la VM Template et définir les ressources
+    - name: Cloner la VM Template et injecter Cloud-Init
       community.proxmox.proxmox_kvm:
         api_host: "{{ pve_api_host }}"
         api_user: "root@pam"
@@ -73,7 +71,7 @@
         validate_certs: false
         state: started
 
-    - name: Attendre l'ouverture du port SSH
+    - name: Attendre que le port SSH (22) soit ouvert sur la nouvelle IP
       ansible.builtin.wait_for:
         host: "172.16.205.{{ vmid_etudiant }}"
         port: 22
@@ -81,56 +79,8 @@
         timeout: 300
         state: started
 
-    - name: Ajouter la VM à l'inventaire temporaire pour configuration
-      ansible.builtin.add_host:
-        name: "172.16.205.{{ vmid_etudiant }}"
-        groups: nouvelles_vms
-        ansible_ssh_user: "etu"
-        ansible_ssh_pass: "etu"
-        ansible_become_pass: "etu"
-        ansible_ssh_common_args: '-o StrictHostKeyChecking=no'
-
 # ==============================================================
-# JEU 2 : PERSONNALISATION OS (Installation à la volée)
-# ==============================================================
-- name: Configuration des services optionnels
-  hosts: nouvelles_vms
-  gather_facts: false
-  become: false
-  environment:
-    # On force le système à chercher les commandes dans les dossiers standards
-    PATH: "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
-
-  tasks:
-    - name: Attendre la fin de la configuration Cloud-Init
-      ansible.builtin.command: /usr/bin/cloud-init status --wait
-      changed_when: false
-
-    - name: Installer Docker
-      ansible.builtin.apt:
-        name: docker.io
-        state: present
-        update_cache: true
-      become: true
-      when: extra_services is defined and 'Docker' in extra_services
-
-    - name: Installer Apache
-      ansible.builtin.apt:
-        name: apache2
-        state: present
-        update_cache: true
-      become: true
-      when: extra_services is defined and 'Apache' in extra_services
-
-    - name: Installer MariaDB
-      ansible.builtin.apt:
-        name: mariadb-server
-        state: present
-        update_cache: true
-      become: true
-      when: extra_services is defined and 'MySQL' in extra_services
-# ==============================================================
-# JEU 3 : GUACAMOLE (Création des accès web)
+# JEU 2 : GUACAMOLE (Création des accès web pour l'étudiant)
 # ==============================================================
 - name: Intégration de la VM dans la passerelle Guacamole
   hosts: localhost
