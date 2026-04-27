@@ -101,8 +101,10 @@
     ansible_ssh_common_args: '-o StrictHostKeyChecking=no -o PasswordAuthentication=yes'
 
   tasks:
-    - name: Bootstraper python3-apt via raw
-      ansible.builtin.raw: apt-get update && apt-get install -y python3-apt
+    - name: Attendre la fin de Cloud-Init et Bootstraper python3-apt via raw
+      ansible.builtin.raw: |
+        /usr/bin/cloud-init status --wait
+        /usr/bin/apt-get update && /usr/bin/apt-get install -y python3-apt
       changed_when: false
 
     - name: Collecter les facts
