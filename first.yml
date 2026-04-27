@@ -25,7 +25,7 @@
         api_token_id: "{{ pve_api_token_id }}"
         api_token_secret: "{{ pve_api_token_secret }}"
         node: "exbasis"
-        vmid: 106
+        vmid: 103
         clone: "VMtest"
         newid: "{{ newid }}"
         validate_certs: false
