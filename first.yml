@@ -1,203 +1,241 @@
 ---
+
 # ==============================================================
-# JEU 1 : PROXMOX (Création des machines depuis AWX)
+
+# JEU 1 : PROXMOX (Création de la machine depuis AWX)
+
 # ==============================================================
+
 - name: Déploiement Cloud Étudiant - Phase Création
+
   hosts: localhost
+
   connection: local
+
   gather_facts: false
 
+
+
   vars:
-    # vmid_etudiant et choix_os sont injectés par le Survey AWX
-    template_linux: 106
-    template_windows: 110
+
+    vmid_etudiant: "50"                      
+
+    newid: "250"
+
+    new_vm_name: "VM-{{ vmid_etudiant }}"                              
+
   
+
   tasks:
+
     - name: Installer proxmoxer (le traducteur Python pour l'API)
+
       pip:
+
         name: proxmoxer
+
         state: present
 
-    # ==========================================================
-    # BLOC LINUX
-    # ==========================================================
-    - name: "[Linux] Cloner la VM Template (Création seule)"
+
+
+    - name: Cloner la VM Template et injecter Cloud-Init
+
       community.proxmox.proxmox_kvm:
+
         api_host: "{{ pve_api_host }}"
+
         api_user: "root@pam"
+
         api_token_id: "{{ pve_api_token_id }}"
+
         api_token_secret: "{{ pve_api_token_secret }}"
+
         node: "exbasis"
-        vmid: "{{ template_linux }}"
+
+        vmid: 106
+
         clone: "VMtest"
-        newid: "200{{ vmid_etudiant }}"
+
+        newid: "{{ newid }}"
+
         validate_certs: false
-        name: "VM-{{ vmid_etudiant }}-LINUX"
+
+        name: "{{ new_vm_name }}"
+
         full: false
+
         state: present
+
         ciuser: "root"
-        cipassword: "password123"
-        net: '{"net0":"virtio,bridge=vmbr0,firewall=0"}'
-        force: true
-      when: "'Linux' in choix_os"
 
-    - name: "[Linux] Injecter l'IP dans la config du clone"
-      ansible.builtin.uri:
-        url: "https://{{ pve_api_host }}:8006/api2/json/nodes/exbasis/qemu/200{{ vmid_etudiant }}/config"
-        method: POST
-        headers:
-          Authorization: "PVEAPIToken=root@pam!{{ pve_api_token_id }}={{ pve_api_token_secret }}"
-        body_format: form-urlencoded
-        body:
+        cipassword: "password123"
+
+        net: '{"net0":"virtio,bridge=vmbr0,firewall=0"}'
+
+        ipconfig:
+
           ipconfig0: "ip=172.16.205.{{ vmid_etudiant }}/16,gw=172.16.1.213"
-        validate_certs: false
-        status_code: 200
-      when: "'Linux' in choix_os"
 
-    - name: "[Linux] Regénérer le disque Cloud-Init"
-      ansible.builtin.uri:
-        url: "https://{{ pve_api_host }}:8006/api2/json/nodes/exbasis/qemu/200{{ vmid_etudiant }}/cloudinit"
-        method: PUT
-        headers:
-          Authorization: "PVEAPIToken=root@pam!{{ pve_api_token_id }}={{ pve_api_token_secret }}"
-        validate_certs: false
-        status_code: 200
-      when: "'Linux' in choix_os"
-
-    - name: "[Linux] Démarrer la nouvelle VM"
-      community.proxmox.proxmox_kvm:
-        api_host: "{{ pve_api_host }}"
-        api_user: "root@pam"
-        api_token_id: "{{ pve_api_token_id }}"
-        api_token_secret: "{{ pve_api_token_secret }}"
-        node: "exbasis"
-        vmid: "200{{ vmid_etudiant }}"
-        validate_certs: false
-        state: started
-      when: "'Linux' in choix_os"
-
-    - name: "[Linux] Attendre que le port SSH (22) soit ouvert"
-      ansible.builtin.wait_for:
-        host: "172.16.205.{{ vmid_etudiant }}"
-        port: 22
-        delay: 15
-        timeout: 300
-        state: started
-      when: "'Linux' in choix_os"
-
-    # ==========================================================
-    # BLOC WINDOWS
-    # ==========================================================
-    - name: "[Windows] Cloner la VM Template (Création seule)"
-      community.proxmox.proxmox_kvm:
-        api_host: "{{ pve_api_host }}"
-        api_user: "root@pam"
-        api_token_id: "{{ pve_api_token_id }}"
-        api_token_secret: "{{ pve_api_token_secret }}"
-        node: "exbasis"
-        vmid: "{{ template_windows }}"
-        clone: "WIN10-TEMPLATE"
-        newid: "300{{ vmid_etudiant }}"
-        validate_certs: false
-        name: "VM-{{ vmid_etudiant }}-WIN"
-        full: false
-        state: present
-        ciuser: "etu"
-        cipassword: "password123"
-        net: '{"net0":"virtio,bridge=vmbr0,firewall=0"}'
         force: true
-      when: "'Windows' in choix_os"
 
-    - name: "[Windows] Injecter l'IP dans la config du clone"
+
+
+    - name: Injecter l'IP dans la config du clone
+
       ansible.builtin.uri:
-        url: "https://{{ pve_api_host }}:8006/api2/json/nodes/exbasis/qemu/300{{ vmid_etudiant }}/config"
+
+        url: "https://{{ pve_api_host }}:8006/api2/json/nodes/exbasis/qemu/{{ newid }}/config"
+
         method: POST
+
         headers:
+
           Authorization: "PVEAPIToken=root@pam!{{ pve_api_token_id }}={{ pve_api_token_secret }}"
+
         body_format: form-urlencoded
+
         body:
-          ipconfig0: "ip=172.16.206.{{ vmid_etudiant }}/16,gw=172.16.1.213"
-        validate_certs: false
-        status_code: 200
-      when: "'Windows' in choix_os"
 
-    - name: "[Windows] Regénérer le disque Cloud-Init"
+          ipconfig0: "ip=172.16.205.{{ vmid_etudiant }}/16,gw=172.16.1.213"
+
+        validate_certs: false
+
+        status_code: 200
+
+
+
+    - name: Regénérer le disque Cloud-Init
+
       ansible.builtin.uri:
-        url: "https://{{ pve_api_host }}:8006/api2/json/nodes/exbasis/qemu/300{{ vmid_etudiant }}/cloudinit"
+
+        url: "https://{{ pve_api_host }}:8006/api2/json/nodes/exbasis/qemu/{{ newid }}/cloudinit"
+
         method: PUT
+
         headers:
+
           Authorization: "PVEAPIToken=root@pam!{{ pve_api_token_id }}={{ pve_api_token_secret }}"
+
         validate_certs: false
+
         status_code: 200
-      when: "'Windows' in choix_os"
 
-    - name: "[Windows] Démarrer la nouvelle VM"
+
+
+    - name: Démarrer la nouvelle VM
+
       community.proxmox.proxmox_kvm:
+
         api_host: "{{ pve_api_host }}"
+
         api_user: "root@pam"
+
         api_token_id: "{{ pve_api_token_id }}"
+
         api_token_secret: "{{ pve_api_token_secret }}"
+
         node: "exbasis"
-        vmid: "300{{ vmid_etudiant }}"
+
+        vmid: "{{ newid }}"
+
         validate_certs: false
+
         state: started
-      when: "'Windows' in choix_os"
+
+
+
+    - name: Attendre que le port SSH (22) soit ouvert sur la nouvelle IP
+
+      ansible.builtin.wait_for:
+
+        host: "172.16.205.{{ vmid_etudiant }}"
+
+        port: 22
+
+        delay: 15
+
+        timeout: 300
+
+        state: started
+
+
 
 # ==============================================================
-# JEU 2 : GUACAMOLE (Création des accès web pour l'étudiant)
+
+# JEU 3 : GUACAMOLE (Création des accès web pour l'étudiant)
+
 # ==============================================================
-- name: Intégration des VMs dans la passerelle Guacamole
+
+- name: Intégration de la VM dans la passerelle Guacamole
+
   hosts: localhost
+
   connection: local
+
   gather_facts: false
 
+
+
   vars:
+
+    vmid_etudiant: "50"
+
     guac_url: "http://172.16.180.250:8080/guacamole"
+
     guac_admin: "guacadmin"
+
     guac_pass: "guacadmin"
 
+
+
   tasks:
-    - name: "[Guacamole] Créer la connexion SSH (Linux)"
+
+    - name: 1. Créer la connexion SSH vers la nouvelle VM
+
       scicore.guacamole.guacamole_connection:
+
         base_url: "{{ guac_url }}"
+
         auth_username: "{{ guac_admin }}"
+
         auth_password: "{{ guac_pass }}"
-        connection_name: "SSH_Linux_{{ vmid_etudiant }}"
+
+        connection_name: "Connexion_SSH_VM_{{ vmid_etudiant }}"
+
         protocol: "ssh"
+
         hostname: "172.16.205.{{ vmid_etudiant }}"
+
         port: 22
+
         username: "root"
-        password: "password123"
-        validate_certs: false
-        state: present
-      when: "'Linux' in choix_os"
 
-    - name: "[Guacamole] Créer la connexion RDP (Windows)"
-      scicore.guacamole.guacamole_connection:
-        base_url: "{{ guac_url }}"
-        auth_username: "{{ guac_admin }}"
-        auth_password: "{{ guac_pass }}"
-        connection_name: "RDP_Windows_{{ vmid_etudiant }}"
-        protocol: "rdp"
-        hostname: "172.16.206.{{ vmid_etudiant }}"
-        port: 3389
-        username: "etu"
         password: "password123"
-        rdp_security: "nla"
-        rdp_ignore_server_certs: true
-        validate_certs: false
-        state: present
-      when: "'Windows' in choix_os"
 
-    - name: "[Guacamole] Créer le compte étudiant et lui lier ses connexions"
+        validate_certs: false
+
+        state: present
+
+
+
+    - name: 2. Créer le compte étudiant et lui lier sa connexion
+
       scicore.guacamole.guacamole_user:
+
         base_url: "{{ guac_url }}"
+
         auth_username: "{{ guac_admin }}"
+
         auth_password: "{{ guac_pass }}"
+
         username: "etu_{{ vmid_etudiant }}"
+
         password: "password123"
+
         allowed_connections:
-          - "SSH_Linux_{{ vmid_etudiant }}"
-          - "RDP_Windows_{{ vmid_etudiant }}"
+
+          - "Connexion_SSH_VM_{{ vmid_etudiant }}"
+
         validate_certs: false
+
         state: present
