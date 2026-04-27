@@ -25,7 +25,7 @@
         api_token_id: "{{ pve_api_token_id }}"
         api_token_secret: "{{ pve_api_token_secret }}"
         node: "exbasis"
-        vmid: 103
+        vmid: 106
         clone: "VMtest"
         newid: "{{ newid }}"
         validate_certs: false
@@ -58,7 +58,7 @@
         headers:
           Authorization: "PVEAPIToken=root@pam!{{ pve_api_token_id }}={{ pve_api_token_secret }}"
         validate_certs: false
-        status_code: 200  
+        status_code: 200
 
     - name: Démarrer la nouvelle VM
       community.proxmox.proxmox_kvm:
@@ -83,7 +83,9 @@
       ansible.builtin.add_host:
         name: "172.16.205.{{ vmid_etudiant }}"
         groups: nouvelles_vms
-        ansible_ssh_common_args: '-o StrictHostKeyChecking=no'
+        ansible_ssh_common_args: '-o StrictHostKeyChecking=no -o PasswordAuthentication=yes'
+        ansible_ssh_pass: "password123"
+        ansible_become_pass: "password123"
 
 # ==============================================================
 # JEU 2 : NOUVELLE VM (Configuration par SSH)
@@ -94,11 +96,20 @@
   become: true
   gather_facts: false
 
-  tasks:
+  vars:
+    ansible_ssh_pass: "password123"
+    ansible_become_pass: "password123"
+    ansible_ssh_common_args: '-o StrictHostKeyChecking=no -o PasswordAuthentication=yes'
+
+ tasks:
     - name: Attendre que SSH soit totalement prêt
-      wait_for_connection:
+      ansible.builtin.wait_for:
+        host: "{{ inventory_hostname }}"
+        port: 22
         delay: 5
         timeout: 600
+        state: started
+      delegate_to: localhost
 
     - name: Collecter les facts maintenant que SSH est OK
       ansible.builtin.setup:
