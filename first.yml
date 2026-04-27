@@ -91,7 +91,7 @@
         hostname: "172.16.205.{{ vmid_etudiant }}"
         port: 22
         username: "etu"
-        password: "password123"
+        password: "etu"
         state: present
       when: "'Linux' in choix_os"
 
@@ -105,7 +105,7 @@
         hostname: "172.16.206.{{ vmid_etudiant }}"
         port: 3389
         username: "etu"
-        password: "password123"
+        password: "etu"
         rdp_security: "nla"              
         rdp_ignore_server_certs: true   
         state: present
@@ -117,7 +117,7 @@
         auth_username: "{{ guac_admin }}"
         auth_password: "{{ guac_pass }}"
         username: "etu_{{ vmid_etudiant }}"
-        password: "password_par_defaut"
+        password: "etu"
         allowed_connections:
           - "SSH_Linux_{{ vmid_etudiant }}"
           - "RDP_Windows_{{ vmid_etudiant }}"
