@@ -1,121 +1,125 @@
 ---
 # ==============================================================
-# JEU 1 : PROXMOX (Création de la machine depuis AWX)
+# JEU 1 : PROXMOX - Déploiement des infrastructures
 # ==============================================================
-- name: Déploiement Cloud Étudiant - Phase Création
+- name: Déploiement Multi-VM Étudiant Dynamique
   hosts: localhost
   connection: local
   gather_facts: false
 
   vars:
-    vmid_etudiant: "50"                      
-    newid: "250"
-    new_vm_name: "VM-{{ vmid_etudiant }}"                              
-  
-  tasks:
-    - name: Installer proxmoxer (le traducteur Python pour l'API)
-      pip:
-        name: proxmoxer
-        state: present
+    templates_config:
+      linux:
+        vmid_source: 106
+        prefix_id: "200"
+        net_prefix: "205"
+        suffixe: "L"
+      windows:
+        vmid_source: 110
+        prefix_id: "300"
+        net_prefix: "206"
+        suffixe: "W"
 
-    - name: Cloner la VM Template et injecter Cloud-Init
+  tasks:
+    - name: "Clonage et Configuration : VM Linux"
       community.proxmox.proxmox_kvm:
         api_host: "{{ pve_api_host }}"
         api_user: "root@pam"
         api_token_id: "{{ pve_api_token_id }}"
         api_token_secret: "{{ pve_api_token_secret }}"
         node: "exbasis"
-        vmid: 106
+        vmid: "{{ templates_config.linux.vmid_source }}"
+        newid: "{{ templates_config.linux.prefix_id }}{{ vmid_etudiant }}"
+        name: "VM-{{ vmid_etudiant }}-{{ templates_config.linux.suffixe }}"
         clone: "VMtest"
-        newid: "{{ newid }}"
-        validate_certs: false
-        name: "{{ new_vm_name }}"
         full: false
         state: present
-        ciuser: "root"
-        cipassword: "password123"
-        net: '{"net0":"virtio,bridge=vmbr0,firewall=0"}'
         ipconfig:
-          ipconfig0: "ip=172.16.205.{{ vmid_etudiant }}/16,gw=172.16.1.213"
-        force: true
-
-    - name: Injecter l'IP dans la config du clone
-      ansible.builtin.uri:
-        url: "https://{{ pve_api_host }}:8006/api2/json/nodes/exbasis/qemu/{{ newid }}/config"
-        method: POST
-        headers:
-          Authorization: "PVEAPIToken=root@pam!{{ pve_api_token_id }}={{ pve_api_token_secret }}"
-        body_format: form-urlencoded
-        body:
-          ipconfig0: "ip=172.16.205.{{ vmid_etudiant }}/16,gw=172.16.1.213"
+          ipconfig0: "ip=172.16.{{ templates_config.linux.net_prefix }}.{{ vmid_etudiant }}/16,gw=172.16.1.213"
         validate_certs: false
-        status_code: 200
 
-    - name: Regénérer le disque Cloud-Init
-      ansible.builtin.uri:
-        url: "https://{{ pve_api_host }}:8006/api2/json/nodes/exbasis/qemu/{{ newid }}/cloudinit"
-        method: PUT
-        headers:
-          Authorization: "PVEAPIToken=root@pam!{{ pve_api_token_id }}={{ pve_api_token_secret }}"
-        validate_certs: false
-        status_code: 200
-
-    - name: Démarrer la nouvelle VM
+    - name: "Clonage et Configuration : VM Windows"
       community.proxmox.proxmox_kvm:
         api_host: "{{ pve_api_host }}"
         api_user: "root@pam"
         api_token_id: "{{ pve_api_token_id }}"
         api_token_secret: "{{ pve_api_token_secret }}"
         node: "exbasis"
-        vmid: "{{ newid }}"
+        vmid: "{{ templates_config.windows.vmid_source }}"
+        newid: "{{ templates_config.windows.prefix_id }}{{ vmid_etudiant }}"
+        name: "VM-{{ vmid_etudiant }}-{{ templates_config.windows.suffixe }}"
+        clone: "WIN10-TEMPLATE"
+        full: false
+        state: present
+        ipconfig:
+          ipconfig0: "ip=172.16.{{ templates_config.windows.net_prefix }}.{{ vmid_etudiant }}/16,gw=172.16.1.213"
         validate_certs: false
-        state: started
 
-    - name: Attendre que le port SSH (22) soit ouvert sur la nouvelle IP
-      ansible.builtin.wait_for:
-        host: "172.16.205.{{ vmid_etudiant }}"
-        port: 22
-        delay: 15
-        timeout: 300
+    - name: Démarrage des machines
+      community.proxmox.proxmox_kvm:
+        api_host: "{{ pve_api_host }}"
+        api_user: "root@pam"
+        api_token_id: "{{ pve_api_token_id }}"
+        api_token_secret: "{{ pve_api_token_secret }}"
+        node: "exbasis"
+        vmid: "{{ item }}"
         state: started
+        validate_certs: false
+      loop:
+        - "{{ templates_config.linux.prefix_id }}{{ vmid_etudiant }}"
+        - "{{ templates_config.windows.prefix_id }}{{ vmid_etudiant }}"
 
 # ==============================================================
-# JEU 2 : GUACAMOLE (Création des accès web pour l'étudiant)
+# JEU 2 : GUACAMOLE - Configuration des accès Web
 # ==============================================================
-- name: Intégration de la VM dans la passerelle Guacamole
+- name: Intégration Guacamole (SSH & RDP)
   hosts: localhost
   connection: local
   gather_facts: false
 
   vars:
-    vmid_etudiant: "50"
     guac_url: "http://172.16.180.250:8080/guacamole"
     guac_admin: "guacadmin"
     guac_pass: "guacadmin"
 
   tasks:
-    - name: 1. Créer la connexion SSH vers la nouvelle VM
+    - name: 1. Créer la connexion SSH (Linux)
       scicore.guacamole.guacamole_connection:
         base_url: "{{ guac_url }}"
         auth_username: "{{ guac_admin }}"
         auth_password: "{{ guac_pass }}"
-        connection_name: "Connexion_SSH_VM_{{ vmid_etudiant }}"
+        connection_name: "SSH_Linux_Etu_{{ vmid_etudiant }}"
         protocol: "ssh"
         hostname: "172.16.205.{{ vmid_etudiant }}"
         port: 22
         username: "etu"
-        password: "etu"
-        validate_certs: false
+        password: "password123"
         state: present
 
-    - name: 2. Créer le compte étudiant et lui lier sa connexion
+    - name: 2. Créer la connexion RDP (Windows)
+      scicore.guacamole.guacamole_connection:
+        base_url: "{{ guac_url }}"
+        auth_username: "{{ guac_admin }}"
+        auth_password: "{{ guac_pass }}"
+        connection_name: "RDP_Windows_Etu_{{ vmid_etudiant }}"
+        protocol: "rdp"
+        hostname: "172.16.206.{{ vmid_etudiant }}"
+        port: 3389
+        username: "etu"
+        password: "password123"
+        parameters:
+          security: "nla"
+          ignore-cert: "true"
+        state: present
+
+    - name: 3. Créer le compte utilisateur et lier les deux machines
       scicore.guacamole.guacamole_user:
         base_url: "{{ guac_url }}"
         auth_username: "{{ guac_admin }}"
         auth_password: "{{ guac_pass }}"
         username: "etu_{{ vmid_etudiant }}"
-        password: "password123"
+        password: "password_par_defaut"
         allowed_connections:
-          - "Connexion_SSH_VM_{{ vmid_etudiant }}"
-        validate_certs: false
+          - "SSH_Linux_Etu_{{ vmid_etudiant }}"
+          - "RDP_Windows_Etu_{{ vmid_etudiant }}"
         state: present
