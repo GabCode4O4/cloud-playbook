@@ -88,35 +88,44 @@
         ansible_ssh_user: "etu"
         ansible_ssh_pass: "etu"
         ansible_become_pass: "etu"
-        ansible_become_exe: "sudo"
-        ansible_ssh_common_args: '-o StrictHostKeyChecking=no -tt'
+        ansible_ssh_common_args: '-o StrictHostKeyChecking=no'
 
 # ==============================================================
 # JEU 2 : PERSONNALISATION OS (Installation à la volée)
 # ==============================================================
 - name: Configuration des services optionnels
   hosts: nouvelles_vms
-  become: true # Utilise sudo avec le mdp défini au-dessus
   gather_facts: false
+  become: false
 
   tasks:
-    - name: Mettre à jour APT (uniquement si des services sont demandés)
-      ansible.builtin.raw: apt-get update
-      when: extra_services | length > 0
+    - name: Attendre la fin de la configuration Cloud-Init
+      ansible.builtin.raw: /usr/bin/cloud-init status --wait
       changed_when: false
 
     - name: Installer Docker
-      ansible.builtin.raw: apt-get install -y docker.io
-      when: "'Docker' in extra_services"
+      ansible.builtin.apt:
+        name: docker.io
+        state: present
+        update_cache: true
+      become: true
+      when: extra_services is defined and 'Docker' in extra_services
 
     - name: Installer Apache
-      ansible.builtin.raw: apt-get install -y apache2
-      when: "'Apache' in extra_services"
+      ansible.builtin.apt:
+        name: apache2
+        state: present
+        update_cache: true
+      become: true
+      when: extra_services is defined and 'Apache' in extra_services
 
-    - name: Installer MariaDB (MySQL)
-      ansible.builtin.raw: apt-get install -y mariadb-server
-      when: "'MySQL' in extra_services"
-
+    - name: Installer MariaDB
+      ansible.builtin.apt:
+        name: mariadb-server
+        state: present
+        update_cache: true
+      become: true
+      when: extra_services is defined and 'MySQL' in extra_services
 # ==============================================================
 # JEU 3 : GUACAMOLE (Création des accès web)
 # ==============================================================
