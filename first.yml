@@ -116,7 +116,7 @@
           Authorization: "PVEAPIToken=root@pam!{{ pve_api_token_id }}={{ pve_api_token_secret }}"
         body_format: form-urlencoded
         body:
-          ipconfig0: "ip=172.16.206.{{ vmid_etudiant }}/16,gw=172.16.1.213"
+          ipconfig0: "ip=172.16.205.{{ vmid_etudiant }}/16,gw=172.16.1.213"
         validate_certs: false
         status_code: 200
       when: "'Windows' in choix_os"
