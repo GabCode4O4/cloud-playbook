@@ -10,7 +10,7 @@
   vars:
     # vmid_etudiant et choix_os sont injectés par le Survey AWX
     template_linux: 106
-    template_windows: 103
+    template_windows: 107
   
   tasks:
     - name: Installer proxmoxer (le traducteur Python pour l'API)
@@ -140,6 +140,15 @@
         node: "exbasis"
         vmid: "300{{ vmid_etudiant }}"
         validate_certs: false
+        state: started
+      when: "'Windows' in choix_os"
+
+    - name: "[Windows] Attendre que le port RDP (3389) soit ouvert (Sysprep en cours...)"
+      ansible.builtin.wait_for:
+        host: "172.16.206.{{ vmid_etudiant }}"
+        port: 3389
+        delay: 30        
+        timeout: 600     
         state: started
       when: "'Windows' in choix_os"
 
