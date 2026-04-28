@@ -6,6 +6,12 @@
   gather_facts: false
 
   tasks:
+      - name: Installer proxmoxer
+        pip:
+          name: proxmoxer
+        state: present
+
+  tasks:
     - name: Eteindre la VM (windows)
       community.proxmox.proxmox_kvm:
         api_host: "{{ pve_api_host }}"
