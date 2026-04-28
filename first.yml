@@ -145,7 +145,7 @@
 
     - name: "[Windows] Attendre que le port RDP (3389) soit ouvert (Sysprep en cours...)"
       ansible.builtin.wait_for:
-        host: "172.16.206.{{ vmid_etudiant }}"
+        host: "172.16.205.{{ vmid_etudiant }}"
         port: 3389
         delay: 30        
         timeout: 600     
@@ -188,7 +188,7 @@
         auth_password: "{{ guac_pass }}"
         connection_name: "RDP_Windows_{{ vmid_etudiant }}"
         protocol: "rdp"
-        hostname: "172.16.206.{{ vmid_etudiant }}"
+        hostname: "172.16.205.{{ vmid_etudiant }}"
         port: 3389
         username: "etu"
         password: "etu"
