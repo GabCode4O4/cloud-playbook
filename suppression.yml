@@ -1,0 +1,81 @@
+---
+
+- name: Suppression d'une VM existante
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  tasks:
+    - name: Eteindre la VM (windows)
+      community.proxmox.proxmox_kvm:
+        api_host: "{{ pve_api_host }}"
+        api_user: "root@pam"
+        api_token_id: "{{ pve_api_token_id }}"
+        api_token_secret: "{{ pve_api_token_secret }}"
+        node: "exbasis"
+        vmid: "300{{ vmid_etudiant }}"
+        validate_certs: false
+        state: stopped
+      when: "'Windows' in choix_os"
+
+    - name: Eteindre la VM (linux)
+      community.proxmox.proxmox_kvm:
+        api_host: "{{ pve_api_host }}"
+        api_user: "root@pam"
+        api_token_id: "{{ pve_api_token_id }}"
+        api_token_secret: "{{ pve_api_token_secret }}"
+        node: "exbasis"
+        vmid: "200{{ vmid_etudiant }}"
+        validate_certs: false
+        state: stopped
+      when: "'Linux' in choix_os"
+
+    - name: Supprimer la VM existante
+      community.proxmox.proxmox_kvm:
+        api_host: "{{ pve_api_host }}"
+        api_user: "root@pam"
+        api_token_id: "{{ pve_api_token_id }}"
+        api_token_secret: "{{ pve_api_token_secret }}"
+        node: "exbasis"
+        vmid: "200{{ vmid_etudiant }}"
+        validate_certs: false
+        state: absent
+      ignore_errors: true
+      when: "'Linux' in choix_os" 
+
+    - name: Supprimer la VM existante
+      community.proxmox.proxmox_kvm:
+        api_host: "{{ pve_api_host }}"
+        api_user: "root@pam"
+        api_token_id: "{{ pve_api_token_id }}"
+        api_token_secret: "{{ pve_api_token_secret }}"
+        node: "exbasis"
+        vmid: "300{{ vmid_etudiant }}"
+        validate_certs: false
+        state: absent
+      ignore_errors: true
+      when: "'Windows' in choix_os"
+
+    - name: Supprimer la connexion Guacamole existante (linux)
+      scicore.guacamole.guacamole_connection:
+        base_url: "http://172.16.180.250:8080/guacamole"
+        auth_username: "guacadmin"
+        auth_password: "guacadmin"
+        connection_name: "SSH_Linux_{{ vmid_etudiant }}"
+        validate_certs: false
+        state: absent
+      ignore_errors: true
+      when: "'Linux' in choix_os" 
+
+    - name: Supprimer la connexion Guacamole existante (windows)
+      scicore.guacamole.guacamole_connection:
+        base_url: "http://172.16.180.250:8080/guacamole"
+        auth_username: "guacadmin"
+        auth_password: "guacadmin"
+        connection_name: "RDP_Windows_{{ vmid_etudiant }}"
+        validate_certs: false
+        state: absent
+      ignore_errors: true
+      when: "'Windows' in choix_os"
+
+
