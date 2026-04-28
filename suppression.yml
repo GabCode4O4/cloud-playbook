@@ -9,7 +9,7 @@
     - name: Installer proxmoxer
       pip:
         name: proxmoxer
-      state: present
+        state: present
 
     - name: Eteindre la VM (windows)
       community.proxmox.proxmox_kvm:
