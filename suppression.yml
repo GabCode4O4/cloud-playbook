@@ -21,6 +21,8 @@
         vmid: "300{{ vmid_etudiant }}"
         validate_certs: false
         state: stopped
+        force: true
+      ignore_errors: true
       when: "'Windows' in choix_os"
 
     - name: Eteindre la VM (linux)
@@ -33,6 +35,8 @@
         vmid: "200{{ vmid_etudiant }}"
         validate_certs: false
         state: stopped
+        force: true
+      ignore_errors: true
       when: "'Linux' in choix_os"
 
     - name: Supprimer la VM existante
