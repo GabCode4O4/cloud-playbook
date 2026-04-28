@@ -9,7 +9,7 @@
 
   vars:
     # vmid_etudiant et choix_os sont injectés par le Survey AWX
-    template_linux: 103
+    template_linux: 106
     template_windows: 107
   
   tasks:
