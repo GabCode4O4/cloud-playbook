@@ -1,15 +1,18 @@
 ---
+# ==============================================================
+# PLAY 1 : Création et initialisation du Conteneur LXC
+# ==============================================================
 - name: Création de l'environnement LXC Étudiant
   hosts: localhost
   gather_facts: false
   
   tasks:
-    - name: Installer la librairie proxmoxer
+    - name: Installer la librairie proxmoxer (prérequis API)
       ansible.builtin.pip:
         name: proxmoxer
         state: present
 
-    - name: "1. Créer le conteneur LXC (Éteint)"
+    - name: "1. Créer le conteneur LXC (État : Présent)"
       community.proxmox.proxmox:
         api_host: "{{ pve_api_host }}"
         api_user: "root@pam"
@@ -18,7 +21,7 @@
         node: "exbasis"
         vmid: "400{{ vmid_etudiant }}"
         hostname: "etu-3il-{{ vmid_etudiant }}"
-        password: "etudiant"
+        password: "etudiant" # Minimum 5 caractères pour Proxmox
         ostemplate: "local:vztmpl/ubuntu-22.04-standard_22.04-1_amd64.tar.zst"
         unprivileged: true
         cores: 2
@@ -26,9 +29,8 @@
         swap: 512
         netif: '{"net0":"name=eth0,bridge=vmbr0,ip=172.16.205.{{ vmid_etudiant }}/24,gw=172.16.1.213"}'
         storage: local-lvm
-        # AJOUT : Autoriser le nesting pour Docker si besoin plus tard
         features: 
-          - nesting=1
+          - nesting=1 # Autorise Docker à l'intérieur du LXC
         state: present
 
     - name: "2. Démarrer le conteneur LXC"
@@ -41,16 +43,6 @@
         vmid: "400{{ vmid_etudiant }}"
         hostname: "etu-3il-{{ vmid_etudiant }}"
         state: started
-
-    - name: Attendre 20 secondes pour le premier boot
-      ansible.builtin.pause:
-        seconds: 20
-
-    - name: Attendre que le port SSH (22) soit ouvert
-      wait_for:
-        host: "172.16.205.{{ vmid_etudiant }}"
-        port: 22
-        timeout: 120
 
     - name: "[Guacamole] Créer la connexion SSH pour l'étudiant"
       scicore.guacamole.guacamole_connection:
@@ -66,7 +58,18 @@
         validate_certs: false
         state: present
 
-    - name: Ajouter le LXC à l'inventaire temporaire
+    - name: "Attendre le démarrage réseau (30s)"
+      ansible.builtin.pause:
+        seconds: 30
+
+    - name: "Vérifier la disponibilité du SSH"
+      ansible.builtin.wait_for:
+        host: "172.16.205.{{ vmid_etudiant }}"
+        port: 22
+        state: started
+        timeout: 120
+
+    - name: Ajouter le LXC à l'inventaire dynamique
       add_host:
         name: "172.16.205.{{ vmid_etudiant }}"
         groups: "nouveaux_lxc"
@@ -75,51 +78,49 @@
         ansible_connection: "ssh"
         ansible_ssh_extra_args: "-o StrictHostKeyChecking=no"
 
+# ==============================================================
+# PLAY 2 : Installation de la Stack Logicielle (Apache, MariaDB, Node)
+# ==============================================================
 - name: Installation de la pile Web et des outils Dev
   hosts: nouveaux_lxc
   gather_facts: true
   
   tasks:
-    - name: Mise à jour des dépôts APT
+    - name: Mise à jour du cache APT
       apt:
         update_cache: true
         cache_valid_time: 3600
 
-    - name: "1. Outils de base (Git, Curl, Htop, Unzip)"
+    - name: "Installation des outils système (Git, Htop, Nano)"
       apt:
-        name: ['git', 'curl', 'wget', 'htop', 'unzip', 'nano', 'vim']
+        name: ['git', 'curl', 'wget', 'htop', 'unzip', 'nano']
         state: present
 
-    - name: "2. Serveur Web & Base de données (Apache + MariaDB)"
+    - name: "Installation Web (Apache, MariaDB, PHP)"
       apt:
-        name: ['apache2', 'mariadb-server']
+        name: ['apache2', 'mariadb-server', 'php', 'libapache2-mod-php', 'php-mysql']
         state: present
 
-    - name: "3. Langages de programmation (PHP & Python)"
-      apt:
-        name: ['php', 'libapache2-mod-php', 'php-mysql', 'python3', 'python3-pip', 'python3-venv']
-        state: present
-
-    - name: "4. Environnement Node.js (via script officiel)"
+    - name: "Installation Node.js 20.x"
       block:
-        - name: Télécharger le script de setup NodeSource
-          command: curl -fsSL https://deb.nodesource.com/setup_20.x -o /tmp/nodesource_setup.sh
+        - name: Télécharger le script NodeSource
+          ansible.builtin.command: curl -fsSL https://deb.nodesource.com/setup_20.x -o /tmp/nodesource_setup.sh
           args:
             creates: /tmp/nodesource_setup.sh
 
         - name: Exécuter le script NodeSource
-          command: bash /tmp/nodesource_setup.sh
+          ansible.builtin.command: bash /tmp/nodesource_setup.sh
           args:
             creates: /etc/apt/sources.list.d/nodesource.list
 
-        - name: Installer Node.js et NPM
+        - name: Installer Node.js
           apt:
             name: nodejs
             state: present
             update_cache: true
 
-    - name: S'assurer que les services critiques sont démarrés
-      systemd:
+    - name: Démarrage des services
+      ansible.builtin.systemd:
         name: "{{ item }}"
         state: started
         enabled: true
