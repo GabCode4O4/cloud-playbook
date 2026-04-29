@@ -5,3 +5,4 @@ collections:
   - name: community.docker
   - name: chocolatey.chocolatey
   - name: ansible.windows
+  - name: community.proxmox.proxmox_lxc
