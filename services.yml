@@ -1,7 +1,4 @@
 ---
-# ==============================================================
-# PLAY 1 : Configuration dynamique de l'inventaire
-# ==============================================================
 - name: Préparation de la cible (SSH ou WinRM)
   hosts: localhost
   gather_facts: false
@@ -13,23 +10,17 @@
         ansible_user: "etu"
         ansible_password: "etu"
         ansible_become_password: "etu"
-        # Paramètres spécifiques pour Windows
+
         ansible_connection: "{{ 'winrm' if (choix_os in ['Win10', 'WinServer']) else 'ssh' }}"
         ansible_port: "{{ 5986 if (choix_os in ['Win10', 'WinServer']) else 22 }}"
         ansible_winrm_server_cert_validation: ignore
         ansible_winrm_transport: ntlm
 
-# ==============================================================
-# PLAY 2 : Déploiement des services
-# ==============================================================
 - name: Installation des services demandés
   hosts: new_vms
   gather_facts: false
 
   tasks:
-    # ----------------------------------------------------------
-    # BLOC LINUX : Docker + Conteneurs
-    # ----------------------------------------------------------
     - name: "[Linux] Configuration Docker et Services"
       block:
         - name: Attendre la fin de Cloud-Init
@@ -61,9 +52,6 @@
       when: choix_os in ['UbuntuServ', 'Debian']
       become: true
 
-# ----------------------------------------------------------
-    # BLOC WINDOWS : Installation native via Chocolatey
-    # ----------------------------------------------------------
     - name: "[Windows] Configuration Services Natifs"
       block:
         - name: Installer Apache

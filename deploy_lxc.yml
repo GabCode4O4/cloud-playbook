@@ -1,0 +1,111 @@
+---
+# ==============================================================
+# PLAY 1 : Création du Conteneur LXC via l'API Proxmox
+# ==============================================================
+- name: Création de l'environnement LXC Étudiant
+  hosts: localhost
+  gather_facts: false
+  
+  tasks:
+    - name: Créer et démarrer le conteneur LXC
+      community.proxmox.proxmox_lxc:
+        api_host: "{{ proxmox_host }}"
+        api_user: "{{ proxmox_user }}"
+        api_password: "{{ proxmox_password }}"
+        node: pve # À remplacer par le nom de ton nœud Proxmox (ex: proxmox-01)
+        vmid: "{{ vmid_etudiant }}"
+        hostname: "etu-3il-{{ vmid_etudiant }}"
+        password: "etu" # Mot de passe root du conteneur
+        ostemplate: "local:vztmpl/ubuntu-22.04-standard_22.04-1_amd64.tar.zst"
+        unprivileged: true
+        cores: 2
+        memory: 1024 # 1 Go est largement suffisant pour du web en LXC
+        swap: 512
+        # Configuration réseau (Adapté à ton plan d'adressage)
+        netif: '{"net0":"name=eth0,bridge=vmbr0,ip=172.16.205.{{ vmid_etudiant }}/24,gw=172.16.205.254"}'
+        storage: local-lvm
+        state: started
+
+    - name: Attendre que le LXC soit démarré et le port SSH (22) ouvert
+      wait_for:
+        host: "172.16.205.{{ vmid_etudiant }}"
+        port: 22
+        delay: 5
+        timeout: 60
+
+    - name: "[Guacamole] Créer la connexion SSH pour l'étudiant"
+      scicore.guacamole.guacamole_connection:
+        base_url: "{{ guac_url }}"
+        auth_username: "{{ guac_admin }}"
+        auth_password: "{{ guac_pass }}"
+        connection_name: "LXC_Web_{{ vmid_etudiant }}"
+        protocol: "ssh"
+        hostname: "172.16.205.{{ vmid_etudiant }}"
+        port: 22
+        username: "root"
+        password: "etu"
+        validate_certs: false
+        state: present
+
+    - name: Ajouter le LXC à l'inventaire temporaire
+      add_host:
+        name: "172.16.205.{{ vmid_etudiant }}"
+        groups: "nouveaux_lxc"
+        ansible_user: "root"
+        ansible_password: "etu"
+        ansible_connection: "ssh"
+        ansible_ssh_extra_args: "-o StrictHostKeyChecking=no"
+
+# ==============================================================
+# PLAY 2 : Provisioning de la Stack "3iL"
+# ==============================================================
+- name: Installation de la pile Web et des outils Dev
+  hosts: nouveaux_lxc
+  gather_facts: true
+  
+  tasks:
+    - name: Mise à jour des dépôts APT
+      apt:
+        update_cache: true
+        cache_valid_time: 3600
+
+    - name: "1. Outils de base (Git, Curl, Htop, Unzip)"
+      apt:
+        name: ['git', 'curl', 'wget', 'htop', 'unzip', 'nano', 'vim']
+        state: present
+
+    - name: "2. Serveur Web & Base de données (Apache + MariaDB)"
+      apt:
+        name: ['apache2', 'mariadb-server']
+        state: present
+
+    - name: "3. Langages de programmation (PHP & Python)"
+      apt:
+        name: ['php', 'libapache2-mod-php', 'php-mysql', 'python3', 'python3-pip', 'python3-venv']
+        state: present
+
+    - name: "4. Environnement Node.js (via script officiel)"
+      block:
+        - name: Télécharger le script de setup NodeSource
+          command: curl -fsSL https://deb.nodesource.com/setup_20.x -o /tmp/nodesource_setup.sh
+          creates: /tmp/nodesource_setup.sh
+
+        - name: Exécuter le script NodeSource
+          command: bash /tmp/nodesource_setup.sh
+          args:
+            creates: /etc/apt/sources.list.d/nodesource.list
+
+        - name: Installer Node.js et NPM
+          apt:
+            name: nodejs
+            state: present
+            update_cache: true
+
+    - name: S'assurer que les services critiques sont démarrés
+      systemd:
+        name: "{{ item }}"
+        state: started
+        enabled: true
+      loop:
+        - apache2
+        - mariadb
