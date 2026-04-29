@@ -36,6 +36,7 @@
         api_token_secret: "{{ pve_api_token_secret }}"
         node: "exbasis"
         vmid: "400{{ vmid_etudiant }}"
+        hostname: "etu-3il-{{ vmid_etudiant }}"
         state: started
 
     - name: Attendre que le LXC soit démarré et le port SSH (22) ouvert
