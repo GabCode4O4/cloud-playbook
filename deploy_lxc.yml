@@ -7,6 +7,11 @@
   gather_facts: false
   
   tasks:
+    - name: Installer la librairie proxmoxer
+      ansible.builtin.pip:
+        name: proxmoxer
+        state: present
+
     - name: Créer et démarrer le conteneur LXC
       community.proxmox.proxmox:
         api_host: "{{ pve_api_host }}"
