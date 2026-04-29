@@ -5,18 +5,19 @@
   gather_facts: false
 
   vars:
+    guac_url: "http://172.16.180.250:8080/guacamole"
+    guac_admin: "guacadmin"
+    guac_pass: "guacadmin"
+
     templates_os:
       UbuntuServ: 106
       Debian: 107
       Win10: 103
       WinServer: 104
-      guac_url: "http://172.16.180.250:8080/guacamole"
-      guac_admin: "guacadmin"
-      guac_pass: "guacadmin"
 
   tasks:
     - name: Installer proxmoxer
-      pip:
+      pip: 
         name: proxmoxer
         state: present
 
@@ -34,6 +35,14 @@
       loop: "{{ [choix_os] | flatten }}"
       when: item in ['Win10', 'WinServer']
 
+    - name: Ajouter les machines à l'inventaire temporaire
+      add_host:
+        name: "172.16.205.{{ vmid_etudiant }}"
+        groups: "new_vms"
+        ansible_user: "etu"
+        ansible_password: "etu"
+        ansible_become_password: "etu"
+
     - name: Lancer la configuration Guacamole Linux
       include_tasks: tasks/guac_linux.yml
       loop: "{{ [choix_os] | flatten }}"
@@ -43,3 +52,16 @@
       include_tasks: tasks/guac_windows.yml
       loop: "{{ [choix_os] | flatten }}"
       when: item in ['Win10', 'WinServer'] 
+
+    - name: "[Guacamole] Créer le compte étudiant et lier les accès"
+      scicore.guacamole.guacamole_user:
+        base_url: "{{ guac_url }}"
+        auth_username: "{{ guac_admin }}"
+        auth_password: "{{ guac_pass }}"
+        username: "etu_{{ vmid_etudiant }}"
+        password: "etu"
+        allowed_connections:
+          - "SSH_Linux_{{ vmid_etudiant }}"
+          - "RDP_Windows_{{ vmid_etudiant }}"
+        validate_certs: false
+        state: present

@@ -1,0 +1,60 @@
+---
+- name: Configuration post-déploiement (Installation de Docker et Services)
+  hosts: new_vms 
+  become: true    
+  gather_facts: true
+
+  tasks:
+    - name: Installer les prérequis Docker
+      apt:
+        name:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - software-properties-common
+          - python3-pip
+        state: present
+        update_cache: true
+
+    - name: Installer Docker
+      apt:
+        name: docker.io
+        state: present
+
+    - name: Activer et démarrer le service Docker
+      systemd:
+        name: docker
+        state: started
+        enabled: true
+
+    - name: Installer la librairie Python Docker (Nécessaire pour Ansible)
+      pip:
+        name: docker
+        state: present
+        break_system_packages: true
+
+    # ==========================================
+    # 2. DÉPLOIEMENT DES CONTENEURS À LA CARTE
+    # ==========================================
+    - name: "Déployer le conteneur Apache (Serveur Web)"
+      community.docker.docker_container:
+        name: web_apache
+        image: httpd:latest
+        ports:
+          - "80:80"
+        restart_policy: always
+      when: "'Apache' in choix_services"
+
+    - name: "Déployer le conteneur MariaDB (Base de données)"
+      community.docker.docker_container:
+        name: bdd_mariadb
+        image: mariadb:latest
+        env:
+          MYSQL_ROOT_PASSWORD: "etu" 
+          MYSQL_DATABASE: "MyBdd"
+          MYSQL_USER: "etu"
+          MYSQL_PASSWORD: "etu"
+        ports:
+          - "3306:3306"
+        restart_policy: always
+      when: "'MariaDB' in choix_services"

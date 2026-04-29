@@ -50,7 +50,7 @@
         validate_certs: false
         state: absent
       ignore_errors: true
-      when: "'Linux' in choix_os" 
+      when: "'UbuntuServ' in choix_os" 
 
     - name: Supprimer la VM existante
       community.proxmox.proxmox_kvm:
@@ -63,7 +63,7 @@
         validate_certs: false
         state: absent
       ignore_errors: true
-      when: "'Windows' in choix_os"
+      when: "'Win10' in choix_os"
 
     - name: Supprimer la connexion Guacamole existante (linux)
       scicore.guacamole.guacamole_connection:
@@ -74,7 +74,7 @@
         validate_certs: false
         state: absent
       ignore_errors: true
-      when: "'Linux' in choix_os" 
+      when: "'UbuntuServ' in choix_os" 
 
     - name: Supprimer la connexion Guacamole existante (windows)
       scicore.guacamole.guacamole_connection:
@@ -85,6 +85,6 @@
         validate_certs: false
         state: absent
       ignore_errors: true
-      when: "'Windows' in choix_os"
+      when: "'Win10' in choix_os"
 
 
