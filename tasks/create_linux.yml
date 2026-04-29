@@ -57,3 +57,7 @@
     delay: 15
     timeout: 300
     state: started
+
+- name: "[Linux] Pause pour laisser Cloud-Init finaliser le système"
+  ansible.builtin.pause:
+    seconds: 30
