@@ -88,7 +88,8 @@
       block:
         - name: Télécharger le script de setup NodeSource
           command: curl -fsSL https://deb.nodesource.com/setup_20.x -o /tmp/nodesource_setup.sh
-          creates: /tmp/nodesource_setup.sh
+          args:
+            creates: /tmp/nodesource_setup.sh
 
         - name: Exécuter le script NodeSource
           command: bash /tmp/nodesource_setup.sh
