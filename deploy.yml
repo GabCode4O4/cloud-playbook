@@ -10,6 +10,9 @@
       Debian: 107
       Win10: 103
       WinServer: 104
+      guac_url: "http://172.16.180.250:8080/guacamole"
+      guac_admin: "guacadmin"
+      guac_pass: "guacadmin"
 
   tasks:
     - name: Installer proxmoxer
