@@ -11,9 +11,7 @@
 
     templates_os:
       UbuntuServ: 106
-      Debian: 107
-      Win10: 103
-      WinServer: 104
+      Win10: 107
 
   tasks:
     - name: Installer proxmoxer
