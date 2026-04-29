@@ -1,9 +1,9 @@
 ---
-- name: Préparation de la cible (SSH ou WinRM)
+- name: Préparation
   hosts: localhost
   gather_facts: false
   tasks:
-    - name: Reconstruire l'inventaire avec les bons paramètres de connexion
+    - name: Reconstruire
       add_host:
         name: "172.16.205.{{ vmid_etudiant }}"
         groups: "new_vms"
@@ -16,7 +16,7 @@
         ansible_winrm_server_cert_validation: ignore
         ansible_winrm_transport: ntlm
 
-- name: Installation des services demandés
+- name: Installation des services 
   hosts: new_vms
   gather_facts: false
 
@@ -27,13 +27,13 @@
           ansible.builtin.raw: cloud-init status --wait
           changed_when: false
 
-        - name: Installation du moteur Docker
+        - name: Installation Docker
           apt:
             name: [docker.io, python3-pip]
             state: present
             update_cache: true
 
-        - name: Lancer Apache (Docker)
+        - name: Lancer Apache
           community.docker.docker_container:
             name: web_apache
             image: httpd:latest
@@ -41,7 +41,7 @@
             restart_policy: always
           when: "'Apache' in choix_services"
 
-        - name: Lancer MariaDB (Docker)
+        - name: Lancer MariaDB
           community.docker.docker_container:
             name: bdd_mariadb
             image: mariadb:latest

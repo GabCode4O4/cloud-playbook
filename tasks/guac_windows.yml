@@ -1,5 +1,5 @@
 ---
-- name: "[Guacamole] Créer la connexion RDP (Windows)"
+- name: "[Guacamole] Créer la connexion RDP"
   scicore.guacamole.guacamole_connection:
     base_url: "{{ guac_url }}"
     auth_username: "{{ guac_admin }}"
@@ -15,7 +15,7 @@
     validate_certs: false
     state: present
 
-- name: "[Guacamole] Créer le compte étudiant et lui lier ses connexions"
+- name: "[Guacamole] Créer le compte étu"
   scicore.guacamole.guacamole_user:
     base_url: "{{ guac_url }}"
     auth_username: "{{ guac_admin }}"

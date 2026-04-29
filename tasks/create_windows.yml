@@ -1,5 +1,5 @@
 ---
-- name: "[Windows] Cloner la VM Template (Création seule)"
+- name: "[Windows] Cloner la template"
   community.proxmox.proxmox_kvm:
     api_host: "{{ pve_api_host }}"
     api_user: "root@pam"
@@ -18,7 +18,7 @@
     net: '{"net0":"virtio,bridge=vmbr0,firewall=0"}'
     force: true
 
-- name: "[Windows] Injecter l'IP dans la config du clone"
+- name: "[Windows] Injecter l'IP dans la config"
   ansible.builtin.uri:
     url: "https://{{ pve_api_host }}:8006/api2/json/nodes/exbasis/qemu/300{{ vmid_etudiant }}/config"
     method: POST
@@ -30,7 +30,7 @@
     validate_certs: false
     status_code: 200
 
-- name: "[Windows] Regénérer le disque Cloud-Init"      
+- name: "Cloud-Init"      
   ansible.builtin.uri:
     url: "https://{{ pve_api_host }}:8006/api2/json/nodes/exbasis/qemu/300{{ vmid_etudiant }}/cloudinit"
     method: PUT
@@ -39,7 +39,7 @@
     validate_certs: false
     status_code: 200
 
-- name: "[Windows] Démarrer la nouvelle VM"
+- name: "Démarrer"
   community.proxmox.proxmox_kvm:
     api_host: "{{ pve_api_host }}"
     api_user: "root@pam"
@@ -50,7 +50,7 @@
     validate_certs: false
     state: started
 
-- name: "[Windows] Attendre que le port RDP (3389)"
+- name: "Attendre que le port RDP dispo"
   ansible.builtin.wait_for:
     host: "172.16.205.{{ vmid_etudiant }}"
     port: 3389

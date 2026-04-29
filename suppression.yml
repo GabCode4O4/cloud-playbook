@@ -39,7 +39,7 @@
       ignore_errors: true
       when: "'Linux' in choix_os"
 
-    - name: Supprimer la VM existante
+    - name: Supprimer la VM 
       community.proxmox.proxmox_kvm:
         api_host: "{{ pve_api_host }}"
         api_user: "root@pam"
@@ -52,7 +52,7 @@
       ignore_errors: true
       when: "'UbuntuServ' in choix_os" 
 
-    - name: Supprimer la VM existante
+    - name: Supprimer la VM
       community.proxmox.proxmox_kvm:
         api_host: "{{ pve_api_host }}"
         api_user: "root@pam"
@@ -65,7 +65,7 @@
       ignore_errors: true
       when: "'Win10' in choix_os"
 
-    - name: Supprimer la connexion Guacamole existante (linux)
+    - name: Supprimer la connexion Guacamole
       scicore.guacamole.guacamole_connection:
         base_url: "http://172.16.180.250:8080/guacamole"
         auth_username: "guacadmin"
@@ -76,7 +76,7 @@
       ignore_errors: true
       when: "'UbuntuServ' in choix_os" 
 
-    - name: Supprimer la connexion Guacamole existante (windows)
+    - name: Supprimer la connexion Guacamole
       scicore.guacamole.guacamole_connection:
         base_url: "http://172.16.180.250:8080/guacamole"
         auth_username: "guacadmin"
