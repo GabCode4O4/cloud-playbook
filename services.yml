@@ -33,9 +33,6 @@
         state: present
         break_system_packages: true
 
-    # ==========================================
-    # 2. DÉPLOIEMENT DES CONTENEURS À LA CARTE
-    # ==========================================
     - name: "Déployer le conteneur Apache (Serveur Web)"
       community.docker.docker_container:
         name: web_apache
