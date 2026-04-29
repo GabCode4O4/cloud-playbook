@@ -12,3 +12,16 @@
     password: "etu"
     validate_certs: false
     state: present
+
+- name: "[Guacamole] Créer le compte étudiant et lui lier ses connexions"
+  scicore.guacamole.guacamole_user:
+    base_url: "{{ guac_url }}"
+    auth_username: "{{ guac_admin }}"
+    auth_password: "{{ guac_pass }}"
+    username: "etu_{{ vmid_etudiant }}"
+    password: "etu"
+    allowed_connections:
+      - "SSH_Linux_{{ vmid_etudiant }}"
+      - "RDP_Windows_{{ vmid_etudiant }}"
+    validate_certs: false
+    state: present
