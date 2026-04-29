@@ -26,6 +26,9 @@
         swap: 512
         netif: '{"net0":"name=eth0,bridge=vmbr0,ip=172.16.205.{{ vmid_etudiant }}/24,gw=172.16.1.213"}'
         storage: local-lvm
+        # AJOUT : Autoriser le nesting pour Docker si besoin plus tard
+        features: 
+          - nesting=1
         state: present
 
     - name: "2. Démarrer le conteneur LXC"
@@ -39,19 +42,15 @@
         hostname: "etu-3il-{{ vmid_etudiant }}"
         state: started
 
-    - name: "2b. Configurer SSH pour Root (LXC Attach)"
-      ansible.builtin.shell: |
-        pct exec 400{{ vmid_etudiant }} -- sed -i 's/#PermitRootLogin.*/PermitRootLogin yes/' /etc/ssh/sshd_config
-        pct exec 400{{ vmid_etudiant }} -- systemctl restart ssh
-      delegate_to: localhost # Cette commande s'exécute via l'API/Shell de l'hôte
-      ignore_errors: true
+    - name: Attendre 20 secondes pour le premier boot
+      ansible.builtin.pause:
+        seconds: 20
 
-    - name: Attendre que le LXC soit démarré et le port SSH (22) ouvert
+    - name: Attendre que le port SSH (22) soit ouvert
       wait_for:
         host: "172.16.205.{{ vmid_etudiant }}"
         port: 22
-        delay: 10
-        timeout: 120 # On double le temps pour être serein
+        timeout: 120
 
     - name: "[Guacamole] Créer la connexion SSH pour l'étudiant"
       scicore.guacamole.guacamole_connection:
