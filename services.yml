@@ -1,4 +1,22 @@
 ---
+# ==============================================================
+# PLAY 1 : Recréer l'inventaire en mémoire pour ce Job
+# ==============================================================
+- name: Préparation de la cible SSH
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Reconstruire l'inventaire temporaire
+      add_host:
+        name: "172.16.205.{{ vmid_etudiant }}"
+        groups: "new_vms"
+        ansible_user: "etu"
+        ansible_password: "etu"
+        ansible_become_password: "etu"
+
+# ==============================================================
+# PLAY 2 : Ton code actuel qui va maintenant trouver la cible
+# ==============================================================
 - name: Configuration post-déploiement (Installation de Docker et Services)
   hosts: new_vms 
   become: true    
