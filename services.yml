@@ -1,85 +1,85 @@
 ---
 # ==============================================================
-# PLAY 1 : Recréer l'inventaire en mémoire pour ce Job
+# PLAY 1 : Configuration dynamique de l'inventaire
 # ==============================================================
-- name: Préparation de la cible SSH
+- name: Préparation de la cible (SSH ou WinRM)
   hosts: localhost
   gather_facts: false
   tasks:
-    - name: Reconstruire l'inventaire temporaire
+    - name: Reconstruire l'inventaire avec les bons paramètres de connexion
       add_host:
         name: "172.16.205.{{ vmid_etudiant }}"
         groups: "new_vms"
         ansible_user: "etu"
         ansible_password: "etu"
         ansible_become_password: "etu"
-        # Les lignes ansible_become_exe et shell_executable ont été supprimées
+        # Paramètres spécifiques pour Windows
+        ansible_connection: "{{ 'winrm' if (choix_os in ['Win10', 'WinServer']) else 'ssh' }}"
+        ansible_port: "{{ 5986 if (choix_os in ['Win10', 'WinServer']) else 22 }}"
+        ansible_winrm_server_cert_validation: ignore
+        ansible_winrm_transport: ntlm
 
 # ==============================================================
-# PLAY 2 : Ton code actuel qui va maintenant trouver la cible
+# PLAY 2 : Déploiement des services
 # ==============================================================
-- name: Configuration post-déploiement (Installation de Docker et Services)
-  hosts: new_vms 
-  become: true    
+- name: Installation des services demandés
+  hosts: new_vms
   gather_facts: false
 
   tasks:
-    - name: Attendre que le système soit parfaitement prêt (Cloud-Init)
-      ansible.builtin.wait_for_connection:
-        timeout: 60
-        sleep: 5
-      become: false   
+    # ----------------------------------------------------------
+    # BLOC LINUX : Docker + Conteneurs
+    # ----------------------------------------------------------
+    - name: "[Linux] Configuration Docker et Services"
+      block:
+        - name: Attendre la fin de Cloud-Init
+          ansible.builtin.raw: cloud-init status --wait
+          changed_when: false
 
-    - name: Récolter les informations de la machine (Gather Facts manuel)
-      ansible.builtin.setup:
+        - name: Installation du moteur Docker
+          apt:
+            name: [docker.io, python3-pip]
+            state: present
+            update_cache: true
 
-    - name: Installer les prérequis Docker
-      apt:
-        name:
-          - apt-transport-https
-          - ca-certificates
-          - curl
-          - software-properties-common
-          - python3-pip
-        state: present
-        update_cache: true
+        - name: Lancer Apache (Docker)
+          community.docker.docker_container:
+            name: web_apache
+            image: httpd:latest
+            ports: ["80:80"]
+            restart_policy: always
+          when: "'Apache' in choix_services"
 
-    - name: Installer Docker
-      apt:
-        name: docker.io
-        state: present
+        - name: Lancer MariaDB (Docker)
+          community.docker.docker_container:
+            name: bdd_mariadb
+            image: mariadb:latest
+            env:
+              MYSQL_ROOT_PASSWORD: "etu"
+            ports: ["3306:3306"]
+          when: "'MariaDB' in choix_services"
+      when: choix_os in ['UbuntuServ', 'Debian']
+      become: true
 
-    - name: Activer et démarrer le service Docker
-      systemd:
-        name: docker
-        state: started
-        enabled: true
+    # ----------------------------------------------------------
+    # BLOC WINDOWS : Installation native via Chocolatey
+    # ----------------------------------------------------------
+    - name: "[Windows] Configuration Services Natifs"
+      block:
+        - name: Installer Chocolatey (Gestionnaire de paquets)
+          win_shell: Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
+          args:
+            creates: C:\ProgramData\chocolatey\bin\choco.exe
 
-    - name: Installer la librairie Python Docker (Nécessaire pour Ansible)
-      pip:
-        name: docker
-        state: present
-        break_system_packages: true
+        - name: Installer Apache
+          win_chocolatey:
+            name: apache-httpd
+            state: present
+          when: "'Apache' in choix_services"
 
-    - name: "Déployer le conteneur Apache (Serveur Web)"
-      community.docker.docker_container:
-        name: web_apache
-        image: httpd:latest
-        ports:
-          - "80:80"
-        restart_policy: always
-      when: "'Apache' in choix_services"
-
-    - name: "Déployer le conteneur MariaDB (Base de données)"
-      community.docker.docker_container:
-        name: bdd_mariadb
-        image: mariadb:latest
-        env:
-          MYSQL_ROOT_PASSWORD: "etu" 
-          MYSQL_DATABASE: "MyBdd"
-          MYSQL_USER: "etu"
-          MYSQL_PASSWORD: "etu"
-        ports:
-          - "3306:3306"
-        restart_policy: always
-      when: "'MariaDB' in choix_services"
+        - name: Installer MariaDB
+          win_chocolatey:
+            name: mariadb
+            state: present
+          when: "'MariaDB' in choix_services"
+      when: choix_os in ['Win10', 'WinServer']
