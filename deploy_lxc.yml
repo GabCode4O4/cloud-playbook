@@ -12,7 +12,7 @@
         name: proxmoxer
         state: present
 
-    - name: Créer et démarrer le conteneur LXC
+    - name: "1. Créer le conteneur LXC (Éteint)"
       community.proxmox.proxmox:
         api_host: "{{ pve_api_host }}"
         api_user: "root@pam"
@@ -21,7 +21,7 @@
         node: "exbasis"
         vmid: "400{{ vmid_etudiant }}"
         hostname: "etu-3il-{{ vmid_etudiant }}"
-        password: "etu" 
+        password: "etu"
         ostemplate: "local:vztmpl/ubuntu-22.04-standard_22.04-1_amd64.tar.zst"
         unprivileged: true
         cores: 2
@@ -29,6 +29,16 @@
         swap: 512
         netif: '{"net0":"name=eth0,bridge=vmbr0,ip=172.16.205.{{ vmid_etudiant }}/24,gw=172.16.1.213"}'
         storage: local-lvm
+        state: present
+
+    - name: "2. Démarrer le conteneur LXC"
+      community.proxmox.proxmox:
+        api_host: "{{ pve_api_host }}"
+        api_user: "root@pam"
+        api_token_id: "{{ pve_api_token_id }}"
+        api_token_secret: "{{ pve_api_token_secret }}"
+        node: "exbasis"
+        vmid: "400{{ vmid_etudiant }}"
         state: started
 
     - name: Attendre que le LXC soit démarré et le port SSH (22) ouvert
