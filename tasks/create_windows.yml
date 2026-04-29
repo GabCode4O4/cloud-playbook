@@ -50,7 +50,7 @@
     validate_certs: false
     state: started
 
-- name: "[Windows] Attendre que le port RDP (3389) soit ouvert (Sysprep en cours...)"
+- name: "[Windows] Attendre que le port RDP (3389)"
   ansible.builtin.wait_for:
     host: "172.16.205.{{ vmid_etudiant }}"
     port: 3389
