@@ -1,0 +1,64 @@
+tasks:
+  - name: "[Linux] Cloner la VM Template (Création seule)"
+    community.proxmox.proxmox_kvm:
+        api_host: "{{ pve_api_host }}"
+        api_user: "root@pam"
+        api_token_id: "{{ pve_api_token_id }}"
+        api_token_secret: "{{ pve_api_token_secret }}"
+        node: "exbasis"
+        vmid: "{{ template_id }}"
+        clone: "VMtest"
+        newid: "200{{ vmid_etudiant }}"
+        validate_certs: false
+        name: "VM-{{ vmid_etudiant }}-LINUX"
+        full: false
+        state: present
+        ciuser: "etu"
+        cipassword: "etu"
+        net: '{"net0":"virtio,bridge=vmbr0,firewall=0"}'
+        force: true
+    when: "'Linux' in choix_os"
+
+  - name: "[Linux] Injecter l'IP dans la config du clone"
+    ansible.builtin.uri:
+        url: "https://{{ pve_api_host }}:8006/api2/json/nodes/exbasis/qemu/200{{ vmid_etudiant }}/config"
+        method: POST
+        headers:
+          Authorization: "PVEAPIToken=root@pam!{{ pve_api_token_id }}={{ pve_api_token_secret }}"
+        body_format: form-urlencoded
+        body:
+          ipconfig0: "ip=172.16.205.{{ vmid_etudiant }}/16,gw=172.16.1.213"
+        validate_certs: false
+        status_code: 200
+    when: "'Linux' in choix_os"
+
+  - name: "[Linux] Regénérer le disque Cloud-Init"
+    ansible.builtin.uri:
+        url: "https://{{ pve_api_host }}:8006/api2/json/nodes/exbasis/qemu/200{{ vmid_etudiant }}/cloudinit"
+        method: PUT
+        headers:
+          Authorization: "PVEAPIToken=root@pam!{{ pve_api_token_id }}={{ pve_api_token_secret }}"
+        validate_certs: false
+        status_code: 200
+    when: "'Linux' in choix_os"
+
+  - name: "[Linux] Démarrer la nouvelle VM"
+    community.proxmox.proxmox_kvm:
+        api_host: "{{ pve_api_host }}"
+        api_user: "root@pam"
+        api_token_id: "{{ pve_api_token_id }}"
+        api_token_secret: "{{ pve_api_token_secret }}"
+        node: "exbasis"
+        vmid: "200{{ vmid_etudiant }}"
+        validate_certs: false
+        state: started
+    when: "'Linux' in choix_os"
+
+  - name: "[Linux] Attendre que le port SSH (22) soit ouvert"
+    ansible.builtin.wait_for:
+        host: "172.16.205.{{ vmid_etudiant }}"
+        port: 22
+        delay: 15
+        timeout: 300
+        state: started
+    when: "'Linux' in choix_os"

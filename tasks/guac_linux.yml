@@ -1,0 +1,19 @@
+vars:
+    guac_url: "http://172.16.180.250:8080/guacamole"
+    guac_admin: "guacadmin"
+    guac_pass: "guacadmin"
+
+tasks:
+  - name: "[Guacamole] Créer la connexion SSH (Linux)"
+    scicore.guacamole.guacamole_connection:
+        base_url: "{{ guac_url }}"
+        auth_username: "{{ guac_admin }}"
+        auth_password: "{{ guac_pass }}"
+        connection_name: "SSH_Linux_{{ vmid_etudiant }}"
+        protocol: "ssh"
+        hostname: "172.16.205.{{ vmid_etudiant }}"
+        port: 22
+        username: "etu"
+        password: "etu"
+        validate_certs: false
+        state: present

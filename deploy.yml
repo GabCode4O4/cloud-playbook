@@ -1,0 +1,42 @@
+---
+- name: Déploiement Cloud Étudiant - Orchestrateur
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars:
+    templates_os:
+      UbuntuServ: 106
+      Debian: 107
+      Win10: 103
+      WinServer: 104
+
+  tasks:
+    - name: Installer proxmoxer
+      pip:
+        name: proxmoxer
+        state: present
+
+    - name: Lancer la création Linux
+      include_tasks: tasks/create_linux.yml
+      vars:
+        template_id: "{{ templates_os[item] }}"
+      loop: "{{ choix_os }}"
+      when: item in ['UbuntuServ', 'Debian']
+
+    - name: Lancer la création Windows
+      include_tasks: tasks/create_windows.yml
+      vars:
+        template_id: "{{ templates_os[item] }}"
+      loop: "{{ choix_os }}"
+      when: item in ['Win10', 'WinServer']
+
+    - name: Lancer la configuration Guacamole Linux
+      include_tasks: tasks/guac_linux.yml
+      loop: "{{ choix_os }}"
+      when: item in ['UbuntuServ', 'Debian']
+
+    - name: Lancer la configuration Guacamole Windows
+      include_tasks: tasks/guac_windows.yml
+      loop: "{{ choix_os }}"
+      when: item in ['Win10', 'WinServer'] 
