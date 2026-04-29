@@ -8,7 +8,7 @@
   
   tasks:
     - name: Créer et démarrer le conteneur LXC
-      community.proxmox.proxmox_lxc:
+      community.proxmox.proxmox:
         api_host: "{{ proxmox_host }}"
         api_user: "{{ proxmox_user }}"
         api_password: "{{ proxmox_password }}"
