@@ -13,6 +13,8 @@
         ansible_user: "etu"
         ansible_password: "etu"
         ansible_become_password: "etu"
+        ansible_become_exe: "/usr/bin/sudo"
+        ansible_shell_executable: "/bin/bash"   # <-- LA SOLUTION MAGIQUE
 
 # ==============================================================
 # PLAY 2 : Ton code actuel qui va maintenant trouver la cible
@@ -20,9 +22,17 @@
 - name: Configuration post-déploiement (Installation de Docker et Services)
   hosts: new_vms 
   become: true    
-  gather_facts: true
+  gather_facts: false
 
   tasks:
+    - name: Attendre que le système soit parfaitement prêt (Cloud-Init)
+      ansible.builtin.wait_for_connection:
+        timeout: 60
+        sleep: 5
+
+    - name: Récolter les informations de la machine (Gather Facts manuel)
+      ansible.builtin.setup:
+
     - name: Installer les prérequis Docker
       apt:
         name:
