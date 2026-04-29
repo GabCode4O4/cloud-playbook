@@ -19,7 +19,7 @@
         api_token_id: "{{ pve_api_token_id }}"
         api_token_secret: "{{ pve_api_token_secret }}"
         node: "exbasis"
-        vmid: "{{ vmid_etudiant }}"
+        vmid: "400{{ vmid_etudiant }}"
         hostname: "etu-3il-{{ vmid_etudiant }}"
         password: "etu" 
         ostemplate: "local:vztmpl/ubuntu-22.04-standard_22.04-1_amd64.tar.zst"
