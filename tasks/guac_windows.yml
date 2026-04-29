@@ -1,34 +1,16 @@
-vars:
-    guac_url: "http://172.16.180.250:8080/guacamole"
-    guac_admin: "guacadmin"
-    guac_pass: "guacadmin"
-
-tasks:
-  - name: "[Guacamole] Créer la connexion RDP (Windows)"
-    scicore.guacamole.guacamole_connection:
-        base_url: "{{ guac_url }}"
-        auth_username: "{{ guac_admin }}"
-        auth_password: "{{ guac_pass }}"
-        connection_name: "RDP_Windows_{{ vmid_etudiant }}"
-        protocol: "rdp"
-        hostname: "172.16.205.{{ vmid_etudiant }}"
-        port: 3389
-        username: "etu"
-        password: "etu"
-        rdp_security: "nla"
-        rdp_ignore_server_certs: true
-        validate_certs: false
-        state: present
-
-  - name: "[Guacamole] Créer le compte étudiant et lui lier ses connexions"
-    scicore.guacamole.guacamole_user:
-        base_url: "{{ guac_url }}"
-        auth_username: "{{ guac_admin }}"
-        auth_password: "{{ guac_pass }}"
-        username: "etu_{{ vmid_etudiant }}"
-        password: "etu"
-        allowed_connections:
-          - "SSH_Linux_{{ vmid_etudiant }}"
-          - "RDP_Windows_{{ vmid_etudiant }}"
-        validate_certs: false
-        state: present
+---
+- name: "[Guacamole] Créer la connexion RDP (Windows)"
+  scicore.guacamole.guacamole_connection:
+    base_url: "{{ guac_url }}"
+    auth_username: "{{ guac_admin }}"
+    auth_password: "{{ guac_pass }}"
+    connection_name: "RDP_Windows_{{ vmid_etudiant }}"
+    protocol: "rdp"
+    hostname: "172.16.205.{{ vmid_etudiant }}"
+    port: 3389
+    username: "etu"
+    password: "etu"
+    rdp_security: "nla"
+    rdp_ignore_server_certs: true
+    validate_certs: false
+    state: present
