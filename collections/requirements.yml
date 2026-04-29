@@ -3,3 +3,5 @@ collections:
   - name: community.proxmox
   - name: scicore.guacamole
   - name: community.docker
+  - name: chocolatey.chocolatey
+  - name: ansible.windows
