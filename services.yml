@@ -13,8 +13,7 @@
         ansible_user: "etu"
         ansible_password: "etu"
         ansible_become_password: "etu"
-        ansible_become_exe: "/usr/bin/sudo"
-        ansible_shell_executable: "/bin/bash"   # <-- LA SOLUTION MAGIQUE
+        # Les lignes ansible_become_exe et shell_executable ont été supprimées
 
 # ==============================================================
 # PLAY 2 : Ton code actuel qui va maintenant trouver la cible
@@ -29,6 +28,7 @@
       ansible.builtin.wait_for_connection:
         timeout: 60
         sleep: 5
+      become: false   
 
     - name: Récolter les informations de la machine (Gather Facts manuel)
       ansible.builtin.setup:
