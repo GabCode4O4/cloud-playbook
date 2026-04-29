@@ -39,12 +39,19 @@
         hostname: "etu-3il-{{ vmid_etudiant }}"
         state: started
 
+    - name: "2b. Configurer SSH pour Root (LXC Attach)"
+      ansible.builtin.shell: |
+        pct exec 400{{ vmid_etudiant }} -- sed -i 's/#PermitRootLogin.*/PermitRootLogin yes/' /etc/ssh/sshd_config
+        pct exec 400{{ vmid_etudiant }} -- systemctl restart ssh
+      delegate_to: localhost # Cette commande s'exécute via l'API/Shell de l'hôte
+      ignore_errors: true
+
     - name: Attendre que le LXC soit démarré et le port SSH (22) ouvert
       wait_for:
         host: "172.16.205.{{ vmid_etudiant }}"
         port: 22
-        delay: 5
-        timeout: 60
+        delay: 10
+        timeout: 120 # On double le temps pour être serein
 
     - name: "[Guacamole] Créer la connexion SSH pour l'étudiant"
       scicore.guacamole.guacamole_connection:
