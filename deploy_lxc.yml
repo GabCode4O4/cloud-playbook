@@ -1,7 +1,4 @@
 ---
-# ==============================================================
-# PLAY 1 : Création du Conteneur LXC via l'API Proxmox
-# ==============================================================
 - name: Création de l'environnement LXC Étudiant
   hosts: localhost
   gather_facts: false
@@ -21,7 +18,7 @@
         node: "exbasis"
         vmid: "400{{ vmid_etudiant }}"
         hostname: "etu-3il-{{ vmid_etudiant }}"
-        password: "etu"
+        password: "etudiant"
         ostemplate: "local:vztmpl/ubuntu-22.04-standard_22.04-1_amd64.tar.zst"
         unprivileged: true
         cores: 2
@@ -58,7 +55,7 @@
         hostname: "172.16.205.{{ vmid_etudiant }}"
         port: 22
         username: "root"
-        password: "etu"
+        password: "etudiant"
         validate_certs: false
         state: present
 
@@ -67,13 +64,10 @@
         name: "172.16.205.{{ vmid_etudiant }}"
         groups: "nouveaux_lxc"
         ansible_user: "root"
-        ansible_password: "etu"
+        ansible_password: "etudiant"
         ansible_connection: "ssh"
         ansible_ssh_extra_args: "-o StrictHostKeyChecking=no"
 
-# ==============================================================
-# PLAY 2 : Provisioning de la Stack "3iL"
-# ==============================================================
 - name: Installation de la pile Web et des outils Dev
   hosts: nouveaux_lxc
   gather_facts: true
