@@ -61,24 +61,19 @@
       when: choix_os in ['UbuntuServ', 'Debian']
       become: true
 
-    # ----------------------------------------------------------
+# ----------------------------------------------------------
     # BLOC WINDOWS : Installation native via Chocolatey
     # ----------------------------------------------------------
     - name: "[Windows] Configuration Services Natifs"
       block:
-        - name: Installer Chocolatey (Gestionnaire de paquets)
-          win_shell: Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
-          args:
-            creates: C:\ProgramData\chocolatey\bin\choco.exe
-
         - name: Installer Apache
-          win_chocolatey:
+          chocolatey.chocolatey.win_chocolatey:
             name: apache-httpd
             state: present
           when: "'Apache' in choix_services"
 
         - name: Installer MariaDB
-          win_chocolatey:
+          chocolatey.chocolatey.win_chocolatey:
             name: mariadb
             state: present
           when: "'MariaDB' in choix_services"
