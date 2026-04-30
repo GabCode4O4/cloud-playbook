@@ -25,7 +25,11 @@
       block:
         - name: Attendre la fin de Cloud-Init
           ansible.builtin.raw: cloud-init status --wait
+          register: cloudinit_result
           changed_when: false
+          failed_when:
+            - cloudinit_result.rc != 0
+            - "'status: done' not in cloudinit_result.stdout"
 
         - name: Installation Docker
           apt:
