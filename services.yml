@@ -14,6 +14,7 @@
         ansible_port: "{{ 5986 if (choix_os in ['Win10', 'WinServer']) else 22 }}"
         ansible_winrm_server_cert_validation: ignore
         ansible_winrm_transport: ntlm
+        ansible_ssh_common_args: '-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
 
     - name: Attendre que WinRM soit prêt (Windows)
       ansible.builtin.wait_for:
@@ -32,7 +33,8 @@
         timeout: 300
         state: started
       when: choix_os in ['UbuntuServ', 'Debian']
-- name: Installation des services 
+
+- name: Installation des services
   hosts: new_vms
   gather_facts: false
 
@@ -47,11 +49,20 @@
             - cloudinit_result.rc != 0
             - "'status: done' not in cloudinit_result.stdout"
 
-        - name: Installation Docker
-          apt:
-            name: [docker.io, python3-pip]
+        - name: Installation Docker et dépendances
+          ansible.builtin.apt:
+            name:
+              - docker.io
+              - python3-pip
+              - python3-docker
             state: present
             update_cache: true
+
+        - name: Démarrer et activer Docker
+          ansible.builtin.systemd:
+            name: docker
+            state: started
+            enabled: true
 
         - name: Lancer Apache
           community.docker.docker_container:
@@ -66,8 +77,20 @@
             name: bdd_mariadb
             image: mariadb:latest
             env:
-              MYSQL_ROOT_PASSWORD: "etu"
+              MARIADB_ROOT_PASSWORD: "etu"
             ports: ["3306:3306"]
+            restart_policy: always
+          when: "'MariaDB' in choix_services"
+
+        - name: Vérifier qu'Apache répond
+          ansible.builtin.uri:
+            url: "http://localhost"
+            status_code: 200
+          when: "'Apache' in choix_services"
+
+        - name: Vérifier que MariaDB répond
+          ansible.builtin.command: docker exec bdd_mariadb mariadb-admin -uroot -petu ping
+          changed_when: false
           when: "'MariaDB' in choix_services"
       when: choix_os in ['UbuntuServ', 'Debian']
       become: true
@@ -80,9 +103,23 @@
             state: present
           when: "'Apache' in choix_services"
 
+        - name: Démarrer le service Apache
+          ansible.windows.win_service:
+            name: Apache2.4
+            state: started
+            start_mode: auto
+          when: "'Apache' in choix_services"
+
         - name: Installer MariaDB
           chocolatey.chocolatey.win_chocolatey:
             name: mariadb
             state: present
+          when: "'MariaDB' in choix_services"
+
+        - name: Démarrer le service MariaDB
+          ansible.windows.win_service:
+            name: MariaDB
+            state: started
+            start_mode: auto
           when: "'MariaDB' in choix_services"
       when: choix_os in ['Win10', 'WinServer']
