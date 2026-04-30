@@ -118,7 +118,6 @@
               }
           when: "'Apache' in choix_services"
 
-        # === MARIADB ===
         - name: Installer MariaDB via Chocolatey
           chocolatey.chocolatey.win_chocolatey:
             name: mariadb
