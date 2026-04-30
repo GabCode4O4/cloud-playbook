@@ -111,10 +111,17 @@
 
         - name: Installer et démarrer le service Apache natif
           ansible.windows.win_shell: |
-            cd C:\tools\apache24\bin\
-            .\httpd.exe -k install
-            .\httpd.exe -k start
-          ignore_errors: true # Évite de faire planter le playbook si le service existe déjà
+            # Chercher le vrai chemin de httpd.exe (en évitant les raccourcis Chocolatey)
+            $httpdPath = Get-ChildItem -Path C:\ -Filter "httpd.exe" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty FullName
+            
+            if ($httpdPath) {
+                Write-Output "Apache trouvé ici : $httpdPath"
+                & $httpdPath -k install
+                & $httpdPath -k start
+            } else {
+                Write-Error "Impossible de trouver httpd.exe sur le disque C:"
+            }
+          ignore_errors: true 
           when: "'Apache' in choix_services"
 
         - name: Ouvrir le firewall pour Apache (port 80)
