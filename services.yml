@@ -69,6 +69,8 @@
             name: web_apache
             image: httpd:latest
             ports: ["80:80"]
+            volumes:
+              - "/var/www/html:/usr/local/apache2/htdocs"
             restart_policy: always
           when: "'Apache' in choix_services"
 
