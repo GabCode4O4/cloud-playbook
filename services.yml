@@ -106,43 +106,16 @@
             state: present
           when: "'Apache' in choix_services"
 
-        - name: Trouver le chemin d'installation d'Apache
-          ansible.windows.win_find:
-            paths: 'C:\tools'
-            patterns: 'httpd.exe'
-            recurse: true
-          register: apache_exe
-          when: "'Apache' in choix_services"
-
-        - name: Enregistrer Apache comme service Windows
-          ansible.windows.win_command: '"{{ apache_exe.files[0].path }}" -k install -n "Apache2.4"'
-          when:
-            - "'Apache' in choix_services"
-            - apache_exe.files | length > 0
-          register: apache_install
-          failed_when:
-            - apache_install.rc != 0
-            - "'already exists' not in apache_install.stderr"
-
         - name: Ouvrir le firewall pour Apache (port 80)
           ansible.windows.win_powershell:
             script: |
               if (-not (Get-NetFirewallRule -DisplayName "Apache HTTP" -ErrorAction SilentlyContinue)) {
-                  New-NetFirewallRule -DisplayName "Apache HTTP" -Direction Inbound -LocalPort 80 -Protocol TCP -Action Allow
+                  New-NetFirewallRule -DisplayName "Apache HTTP" `
+                    -Direction Inbound `
+                    -LocalPort 80 `
+                    -Protocol TCP `
+                    -Action Allow
               }
-          when: "'Apache' in choix_services"
-
-        - name: Démarrer le service Apache
-          ansible.windows.win_service:
-            name: Apache2.4
-            state: started
-            start_mode: auto
-          when: "'Apache' in choix_services"
-
-        - name: Vérifier qu'Apache répond
-          ansible.windows.win_uri:
-            url: "http://localhost"
-            status_code: 200
           when: "'Apache' in choix_services"
 
         # === MARIADB ===
@@ -156,32 +129,11 @@
           ansible.windows.win_powershell:
             script: |
               if (-not (Get-NetFirewallRule -DisplayName "MariaDB" -ErrorAction SilentlyContinue)) {
-                  New-NetFirewallRule -DisplayName "MariaDB" -Direction Inbound -LocalPort 3306 -Protocol TCP -Action Allow
+                  New-NetFirewallRule -DisplayName "MariaDB" `
+                    -Direction Inbound `
+                    -LocalPort 3306 `
+                    -Protocol TCP `
+                    -Action Allow
               }
-          when: "'MariaDB' in choix_services"
-
-        - name: Trouver le nom exact du service MariaDB
-          ansible.windows.win_powershell:
-            script: |
-              $svc = Get-Service | Where-Object { $_.Name -like 'MariaDB*' -or $_.Name -like 'MySQL*' } | Select-Object -First 1
-              if ($svc) { $svc.Name } else { "" }
-          register: mariadb_svc
-          when: "'MariaDB' in choix_services"
-
-        - name: Démarrer le service MariaDB
-          ansible.windows.win_service:
-            name: "{{ mariadb_svc.output[0] }}"
-            state: started
-            start_mode: auto
-          when:
-            - "'MariaDB' in choix_services"
-            - mariadb_svc.output | length > 0
-            - mariadb_svc.output[0] | length > 0
-
-        - name: Vérifier que MariaDB répond
-          ansible.windows.win_wait_for:
-            host: 127.0.0.1
-            port: 3306
-            timeout: 30
           when: "'MariaDB' in choix_services"
       when: choix_os in ['Win10', 'WinServer']
