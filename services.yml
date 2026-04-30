@@ -10,12 +10,28 @@
         ansible_user: "etu"
         ansible_password: "etu"
         ansible_become_password: "etu"
-
         ansible_connection: "{{ 'winrm' if (choix_os in ['Win10', 'WinServer']) else 'ssh' }}"
         ansible_port: "{{ 5986 if (choix_os in ['Win10', 'WinServer']) else 22 }}"
         ansible_winrm_server_cert_validation: ignore
         ansible_winrm_transport: ntlm
 
+    - name: Attendre que WinRM soit prêt (Windows)
+      ansible.builtin.wait_for:
+        host: "172.16.205.{{ vmid_etudiant }}"
+        port: 5986
+        delay: 15
+        timeout: 600
+        state: started
+      when: choix_os in ['Win10', 'WinServer']
+
+    - name: Attendre que SSH soit prêt (Linux)
+      ansible.builtin.wait_for:
+        host: "172.16.205.{{ vmid_etudiant }}"
+        port: 22
+        delay: 5
+        timeout: 300
+        state: started
+      when: choix_os in ['UbuntuServ', 'Debian']
 - name: Installation des services 
   hosts: new_vms
   gather_facts: false
