@@ -81,6 +81,8 @@
             env:
               MARIADB_ROOT_PASSWORD: "etu"
             ports: ["3306:3306"]
+            volumes:
+              - "/home/etu/mysql_data:/var/lib/mysql"
             restart_policy: always
           when: "'MariaDB' in choix_services"
 
@@ -101,11 +103,18 @@
 
     - name: "[Windows] Configuration Services Natifs"
       block:
-        # === APACHE ===
         - name: Installer Apache via Chocolatey
           chocolatey.chocolatey.win_chocolatey:
             name: apache-httpd
             state: present
+          when: "'Apache' in choix_services"
+
+        - name: Installer et démarrer le service Apache natif
+          ansible.windows.win_shell: |
+            cd C:\tools\apache24\bin\
+            .\httpd.exe -k install
+            .\httpd.exe -k start
+          ignore_errors: true # Évite de faire planter le playbook si le service existe déjà
           when: "'Apache' in choix_services"
 
         - name: Ouvrir le firewall pour Apache (port 80)
