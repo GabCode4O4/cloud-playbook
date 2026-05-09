@@ -11,7 +11,7 @@
 
     templates_os:
       UbuntuServ: 106
-      Debian: 103
+      Debian: 101
       Win10: 107
 
   tasks:
