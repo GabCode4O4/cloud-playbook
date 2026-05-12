@@ -10,9 +10,9 @@
     guac_pass: "guacadmin"
 
     templates_os:
-      UbuntuServ: 106
+      UbuntuServ: 103
       Debian: 101
-      Win10: 107
+      Win10: 104
 
   tasks:
     - name: Installer proxmoxer
