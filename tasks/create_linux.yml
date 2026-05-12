@@ -17,6 +17,7 @@
     cipassword: "etu"
     net: '{"net0":"virtio,bridge=vmbr0,firewall=0"}'
     force: true
+    timeout: 300
 
 - name: "Injecter l'IP dans la config du clone"
   ansible.builtin.uri:

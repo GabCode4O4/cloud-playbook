@@ -57,3 +57,6 @@
     delay: 30        
     timeout: 600     
     state: started
+- name: "Laisser le temps à Windows de démarrer ses services RDP"
+  ansible.builtin.pause:
+    seconds: 45
