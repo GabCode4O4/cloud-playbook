@@ -49,6 +49,7 @@
     vmid: "200{{ vmid_etudiant }}"
     validate_certs: false
     state: started
+    timeout: 120
 
 - name: "Attendre que le port SSh soit dispo"
   ansible.builtin.wait_for:
