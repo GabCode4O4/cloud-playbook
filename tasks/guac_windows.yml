@@ -10,7 +10,7 @@
     port: 3389
     username: "etu"
     password: "etu"
-    rdp_security: "nla"
+    rdp_security: "any"
     rdp_ignore_server_certs: true
     validate_certs: false
     state: present
