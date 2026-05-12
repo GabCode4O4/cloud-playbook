@@ -21,7 +21,7 @@
         state: stopped
         force: true
       ignore_errors: true
-      when: "'Win10' in choix_os" 
+      when: "'Windows' in choix_os" 
 
     - name: Eteindre la VM (linux)
       community.proxmox.proxmox_kvm:
@@ -35,7 +35,7 @@
         state: stopped
         force: true
       ignore_errors: true
-      when: "'UbuntuServ' in choix_os or 'Debian' in choix_os" 
+      when: "'Linux' in choix_os or 'Debian' in choix_os" 
 
     - name: Supprimer la VM (Linux)
       community.proxmox.proxmox_kvm:
@@ -48,7 +48,7 @@
         validate_certs: false
         state: absent
       ignore_errors: true
-      when: "'UbuntuServ' in choix_os or 'Debian' in choix_os"
+      when: "'Linux' in choix_os"
 
     - name: Supprimer la VM (Windows)
       community.proxmox.proxmox_kvm:
@@ -61,7 +61,7 @@
         validate_certs: false
         state: absent
       ignore_errors: true
-      when: "'Win10' in choix_os"
+      when: "'Windows' in choix_os"
 
     - name: Supprimer la connexion Guacamole (Linux)
       scicore.guacamole.guacamole_connection:
@@ -72,7 +72,7 @@
         validate_certs: false
         state: absent
       ignore_errors: true
-      when: "'UbuntuServ' in choix_os or 'Debian' in choix_os"
+      when: "'Linux' in choix_os
 
     - name: Supprimer la connexion Guacamole (Windows)
       scicore.guacamole.guacamole_connection:
@@ -83,4 +83,4 @@
         validate_certs: false
         state: absent
       ignore_errors: true
-      when: "'Win10' in choix_os"
+      when: "'Windows' in choix_os"
