@@ -1,5 +1,3 @@
----
-
 - name: Suppression d'une VM existante
   hosts: localhost
   connection: local
@@ -23,7 +21,7 @@
         state: stopped
         force: true
       ignore_errors: true
-      when: "'Windows' in choix_os"
+      when: "'Win10' in choix_os" 
 
     - name: Eteindre la VM (linux)
       community.proxmox.proxmox_kvm:
@@ -37,9 +35,9 @@
         state: stopped
         force: true
       ignore_errors: true
-      when: "'Linux' in choix_os"
+      when: "'UbuntuServ' in choix_os or 'Debian' in choix_os" 
 
-    - name: Supprimer la VM 
+    - name: Supprimer la VM (Linux)
       community.proxmox.proxmox_kvm:
         api_host: "{{ pve_api_host }}"
         api_user: "root@pam"
@@ -50,9 +48,9 @@
         validate_certs: false
         state: absent
       ignore_errors: true
-      when: "'UbuntuServ' in choix_os" 
+      when: "'UbuntuServ' in choix_os or 'Debian' in choix_os"
 
-    - name: Supprimer la VM
+    - name: Supprimer la VM (Windows)
       community.proxmox.proxmox_kvm:
         api_host: "{{ pve_api_host }}"
         api_user: "root@pam"
@@ -65,26 +63,24 @@
       ignore_errors: true
       when: "'Win10' in choix_os"
 
-    - name: Supprimer la connexion Guacamole
+    - name: Supprimer la connexion Guacamole (Linux)
       scicore.guacamole.guacamole_connection:
-        base_url: "http://172.16.180.250:8080/guacamole"
-        auth_username: "guacadmin"
-        auth_password: "guacadmin"
+        base_url: "http://{{ guac_host }}:8080/guacamole" 
+        auth_username: "{{ guac_admin }}"
+        auth_password: "{{ guac_pass }}"
         connection_name: "SSH_Linux_{{ vmid_etudiant }}"
         validate_certs: false
         state: absent
       ignore_errors: true
-      when: "'UbuntuServ' in choix_os" 
+      when: "'UbuntuServ' in choix_os or 'Debian' in choix_os"
 
-    - name: Supprimer la connexion Guacamole
+    - name: Supprimer la connexion Guacamole (Windows)
       scicore.guacamole.guacamole_connection:
-        base_url: "http://172.16.180.250:8080/guacamole"
-        auth_username: "guacadmin"
-        auth_password: "guacadmin"
+        base_url: "http://{{ guac_host }}:8080/guacamole"
+        auth_username: "{{ guac_admin }}"
+        auth_password: "{{ guac_pass }}"
         connection_name: "RDP_Windows_{{ vmid_etudiant }}"
         validate_certs: false
         state: absent
       ignore_errors: true
       when: "'Win10' in choix_os"
-
-
