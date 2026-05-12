@@ -16,7 +16,7 @@
         api_user: "root@pam"
         api_token_id: "{{ pve_api_token_id }}"
         api_token_secret: "{{ pve_api_token_secret }}"
-        node: "exbasis"
+        node: "nimbus14"
         vmid: "200{{ vmid_etudiant }}"
         validate_certs: false
         state: started
@@ -30,7 +30,7 @@
         api_user: "root@pam"
         api_token_id: "{{ pve_api_token_id }}"
         api_token_secret: "{{ pve_api_token_secret }}"
-        node: "exbasis"
+        node: "nimbus14"
         vmid: "300{{ vmid_etudiant }}"
         validate_certs: false
         state: started
