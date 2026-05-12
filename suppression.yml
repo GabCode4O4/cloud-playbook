@@ -72,7 +72,7 @@
         validate_certs: false
         state: absent
       ignore_errors: true
-      when: "'Linux' in choix_os
+      when: "'Linux' in choix_os"
 
     - name: Supprimer la connexion Guacamole (Windows)
       scicore.guacamole.guacamole_connection:
