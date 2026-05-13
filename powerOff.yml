@@ -1,0 +1,39 @@
+---
+- name: Eteindre une VM (Self-Service)
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  tasks:
+    - name: Installer proxmoxer
+      pip:
+        name: proxmoxer
+        state: present
+
+    - name: Eteindre la VM Linux
+      community.proxmox.proxmox_kvm:
+        api_host: "{{ pve_api_host }}"
+        api_user: "root@pam"
+        api_token_id: "{{ pve_api_token_id }}"
+        api_token_secret: "{{ pve_api_token_secret }}"
+        node: "nimbus14"
+        vmid: "200{{ vmid_etudiant }}"
+        validate_certs: false
+        state: stopped
+      when: "'UbuntuServ' in choix_os or 'Debian' in choix_os"
+      no_log: true
+      ignore_errors: true
+
+    - name: Eteindre la VM Windows
+      community.proxmox.proxmox_kvm:
+        api_host: "{{ pve_api_host }}"
+        api_user: "root@pam"
+        api_token_id: "{{ pve_api_token_id }}"
+        api_token_secret: "{{ pve_api_token_secret }}"
+        node: "nimbus14"
+        vmid: "300{{ vmid_etudiant }}"
+        validate_certs: false
+        state: stopped
+      when: "'Win10' in choix_os or 'WinServer' in choix_os"
+      no_log: true
+      ignore_errors: true
