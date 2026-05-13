@@ -20,7 +20,7 @@
         vmid: "200{{ vmid_etudiant }}"
         validate_certs: false
         state: stopped
-      when: "'UbuntuServ' in choix_os or 'Debian' in choix_os"
+      when: "'Linux' in choix_os"
       no_log: true
       ignore_errors: true
 
@@ -34,6 +34,6 @@
         vmid: "300{{ vmid_etudiant }}"
         validate_certs: false
         state: stopped
-      when: "'Win10' in choix_os or 'WinServer' in choix_os"
+      when: "'Windows' in choix_os"
       no_log: true
       ignore_errors: true
