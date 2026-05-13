@@ -5,6 +5,13 @@
   gather_facts: false
 
   tasks:
+    - name: Vérifier que choix_os est défini
+      assert:
+        that:
+          - choix_os is defined
+          - choix_os in ['Linux', 'Windows']
+        fail_msg: "La variable 'choix_os' doit être définie avec la valeur 'Linux' ou 'Windows'"
+
     - name: Installer proxmoxer
       pip:
         name: proxmoxer
