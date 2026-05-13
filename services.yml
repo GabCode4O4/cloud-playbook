@@ -109,6 +109,17 @@
             state: present
           when: "'Apache' in choix_services"
 
+        - name: Configurer Apache pour écouter sur le port 80
+          ansible.windows.win_lineinfile:
+            path: C:\tools\apache24\conf\httpd.conf
+            regexp: '^Listen '
+            line: 'Listen 80'
+          when: "'Apache' in choix_services"
+
+        - name: Redémarrer le service Apache
+          ansible.windows.win_shell: Restart-Service -Name "apache*"
+          when: "'Apache' in choix_services"
+
         - name: Ouvrir le firewall pour Apache (port 80)
           ansible.windows.win_powershell:
             script: |
