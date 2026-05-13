@@ -109,28 +109,67 @@
             state: present
           when: "'Apache' in choix_services"
 
-        - name: Configurer Apache pour écouter sur le port 80
+        - name: Localiser et reconfigurer httpd.conf (port 80)
           ansible.windows.win_powershell:
             script: |
-              $confPath = "C:\tools\apache24\conf\httpd.conf"
-              if (Test-Path $confPath) {
-                  (Get-Content $confPath) -replace '^Listen .*', 'Listen 80' | Set-Content $confPath
+              $candidates = @(
+                  "C:\tools\apache24",
+                  "C:\Apache24",
+                  "C:\Program Files\Apache Group\Apache2",
+                  "C:\Program Files\Apache Software Foundation\Apache2.4"
+              )
+              $apacheDir = $candidates | Where-Object { Test-Path "$_\conf\httpd.conf" } | Select-Object -First 1
+
+              if (-not $apacheDir) {
+                  $svc = Get-WmiObject Win32_Service |
+                      Where-Object { $_.Name -like "Apache*" -or $_.DisplayName -like "Apache*" } |
+                      Select-Object -First 1
+                  if ($svc) {
+                      $exe = ($svc.PathName -replace '"', '').Trim().Split(' ')[0]
+                      $apacheDir = Split-Path (Split-Path $exe -Parent) -Parent
+                  }
               }
+
+              if (-not $apacheDir) { Write-Error "Répertoire Apache introuvable"; exit 1 }
+
+              $confPath = "$apacheDir\conf\httpd.conf"
+              Write-Host "Chemin détecté : $confPath"
+
+              $content = [System.IO.File]::ReadAllText($confPath)
+              # Remplace toutes les variantes : Listen 8080 / Listen 80 / Listen 0.0.0.0:8080
+              $content = [regex]::Replace($content, '(?m)^Listen\s+[\d.:]+\d+', 'Listen 80')
+              # Corrige ServerName si le port y est encodé
+              $content = [regex]::Replace($content, '(?m)^(ServerName\s+\S+):\d+', '${1}:80')
+              # Écriture UTF-8 sans BOM (Apache ne supporte pas le BOM)
+              [System.IO.File]::WriteAllText($confPath, $content, [System.Text.UTF8Encoding]::new($false))
+              Write-Host "httpd.conf mis à jour"
           when: "'Apache' in choix_services"
 
         - name: Redémarrer le service Apache
-          ansible.windows.win_shell: Restart-Service -Name "apache*"
-          when: "'Apache' in choix_services"
-
-        - name: Ouvrir le firewall pour Apache (port 80)
           ansible.windows.win_powershell:
             script: |
-              if (-not (Get-NetFirewallRule -DisplayName "Apache HTTP" -ErrorAction SilentlyContinue)) {
+              $svc = Get-Service | Where-Object { $_.Name -like "Apache*" -or $_.DisplayName -like "Apache*" } | Select-Object -First 1
+              if (-not $svc) { Write-Error "Service Apache introuvable"; exit 1 }
+              Restart-Service -Name $svc.Name -Force
+              $svc.WaitForStatus('Running', '00:00:30')
+              Write-Host "Service $($svc.Name) redémarré, statut : $((Get-Service $svc.Name).Status)"
+          when: "'Apache' in choix_services"
+
+        - name: Ouvrir le firewall Windows pour Apache (port 80)
+          ansible.windows.win_powershell:
+            script: |
+              # Détecter si port 80 est déjà pris par un autre processus (ex: IIS)
+              $conflict = netstat -ano | Select-String '^\s+TCP\s+[\d.:]+:80\s+' | Select-Object -First 1
+              if ($conflict) { Write-Host "AVERTISSEMENT port 80 déjà utilisé : $conflict" }
+
+              $rule = Get-NetFirewallRule -DisplayName "Apache HTTP" -ErrorAction SilentlyContinue
+              if ($rule) {
+                  Set-NetFirewallRule -DisplayName "Apache HTTP" -LocalPort 80 -Protocol TCP -Action Allow
+                  Write-Host "Règle firewall mise à jour"
+              } else {
                   New-NetFirewallRule -DisplayName "Apache HTTP" `
-                    -Direction Inbound `
-                    -LocalPort 80 `
-                    -Protocol TCP `
-                    -Action Allow
+                      -Direction Inbound -LocalPort 80 -Protocol TCP -Action Allow
+                  Write-Host "Règle firewall créée"
               }
           when: "'Apache' in choix_services"
 
