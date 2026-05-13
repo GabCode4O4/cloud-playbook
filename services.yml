@@ -110,10 +110,12 @@
           when: "'Apache' in choix_services"
 
         - name: Configurer Apache pour écouter sur le port 80
-          community.windows.win_lineinfile:
-            path: C:\tools\apache24\conf\httpd.conf
-            regexp: '^Listen '
-            line: 'Listen 80'
+          ansible.windows.win_powershell:
+            script: |
+              $confPath = "C:\tools\apache24\conf\httpd.conf"
+              if (Test-Path $confPath) {
+                  (Get-Content $confPath) -replace '^Listen .*', 'Listen 80' | Set-Content $confPath
+              }
           when: "'Apache' in choix_services"
 
         - name: Redémarrer le service Apache
