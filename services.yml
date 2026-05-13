@@ -110,7 +110,7 @@
           when: "'Apache' in choix_services"
 
         - name: Configurer Apache pour écouter sur le port 80
-          ansible.windows.win_lineinfile:
+          community.windows.win_lineinfile:
             path: C:\tools\apache24\conf\httpd.conf
             regexp: '^Listen '
             line: 'Listen 80'
