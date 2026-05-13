@@ -21,7 +21,7 @@
         validate_certs: false
         state: started
       when: "'Linux' in choix_os"
-      no_log: true
+      #no_log: true
       ignore_errors: true
 
     - name: Démarrer la VM Windows
@@ -35,5 +35,5 @@
         validate_certs: false
         state: started
       when: "'Windows' in choix_os"
-      no_log: true
+      #no_log: true
       ignore_errors: true
