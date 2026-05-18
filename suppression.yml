@@ -4,7 +4,7 @@
   gather_facts: false
 
   vars:
-    guac_url: "http://172.16.184.235:8080/guacamole"
+    guac_url: "http://172.16.1.78/guacamole"
     guac_admin: "guacadmin"
     guac_pass: "guacadmin"
 
