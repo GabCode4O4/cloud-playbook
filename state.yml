@@ -1,0 +1,47 @@
+---
+- name: État d'une VM (Self-Service)
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  tasks:
+    - name: Installer proxmoxer
+      pip:
+        name: proxmoxer
+        state: present
+
+    - name: Récupérer l'état de la VM Linux
+      community.proxmox.proxmox_vm_info:
+        api_host: "{{ pve_api_host }}"
+        api_user: "root@pam"
+        api_token_id: "{{ pve_api_token_id }}"
+        api_token_secret: "{{ pve_api_token_secret }}"
+        node: "nimbus14"
+        vmid: "200{{ vmid_etudiant }}"
+        validate_certs: false
+      register: vm_linux_info
+      when: "'Linux' in choix_os"
+      no_log: true
+
+    - name: Récupérer l'état de la VM Windows
+      community.proxmox.proxmox_vm_info:
+        api_host: "{{ pve_api_host }}"
+        api_user: "root@pam"
+        api_token_id: "{{ pve_api_token_id }}"
+        api_token_secret: "{{ pve_api_token_secret }}"
+        node: "nimbus14"
+        vmid: "300{{ vmid_etudiant }}"
+        validate_certs: false
+      register: vm_windows_info
+      when: "'Windows' in choix_os"
+      no_log: true
+
+    - name: Afficher l'état de la VM Linux
+      ansible.builtin.debug:
+        msg: "VM Linux (200{{ vmid_etudiant }}) : {{ vm_linux_info.proxmox_vms[0].status | upper }}"
+      when: "'Linux' in choix_os and vm_linux_info.proxmox_vms is defined"
+
+    - name: Afficher l'état de la VM Windows
+      ansible.builtin.debug:
+        msg: "VM Windows (300{{ vmid_etudiant }}) : {{ vm_windows_info.proxmox_vms[0].status | upper }}"
+      when: "'Windows' in choix_os and vm_windows_info.proxmox_vms is defined"
