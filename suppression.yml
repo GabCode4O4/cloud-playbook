@@ -3,6 +3,11 @@
   connection: local
   gather_facts: false
 
+  vars:
+    guac_url: "http://172.16.184.235:8080/guacamole"
+    guac_admin: "guacadmin"
+    guac_pass: "guacadmin"
+
   tasks:
     - name: Installer proxmoxer
       pip:
@@ -65,7 +70,7 @@
 
     - name: Supprimer la connexion Guacamole (Linux)
       scicore.guacamole.guacamole_connection:
-        base_url: "http://{{ guac_host }}:8080/guacamole" 
+        base_url: "{{ guac_url }}" 
         auth_username: "{{ guac_admin }}"
         auth_password: "{{ guac_pass }}"
         connection_name: "SSH_Linux_{{ vmid_etudiant }}"
@@ -76,7 +81,7 @@
 
     - name: Supprimer la connexion Guacamole (Windows)
       scicore.guacamole.guacamole_connection:
-        base_url: "http://{{ guac_host }}:8080/guacamole"
+        base_url: "{{ guac_url }}"
         auth_username: "{{ guac_admin }}"
         auth_password: "{{ guac_pass }}"
         connection_name: "RDP_Windows_{{ vmid_etudiant }}"
