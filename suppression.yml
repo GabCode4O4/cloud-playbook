@@ -4,7 +4,7 @@
   gather_facts: false
 
   vars:
-    guac_url: "http://172.16.1.78/guacamole"
+    guac_url: "https://nimbus.3il.fr/guacamole/"
     guac_admin: "guacadmin"
     guac_pass: "guacadmin"
 
@@ -40,7 +40,7 @@
         state: stopped
         force: true
       ignore_errors: true
-      when: "'Linux' in choix_os or 'Debian' in choix_os" 
+      when: "'Linux' in choix_os" 
 
     - name: Supprimer la VM (Linux)
       community.proxmox.proxmox_kvm:
