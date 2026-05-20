@@ -5,7 +5,7 @@
   gather_facts: false
 
   vars:
-    guac_url: "https://nimbus.3il.fr/guacamole"
+    guac_url: "https://nimbus.3il.fr/guacamole/"
     guac_admin: "guacadmin"
     guac_pass: "guacadmin"
 
