@@ -52,7 +52,7 @@
     state: started
     timeout: 120
 
-- name: "Attendre que le port SSh soit dispo"
+- name: "Attendre que le port SSH soit dispo"
   ansible.builtin.wait_for:
     host: "172.16.205.{{ vmid_etudiant }}"
     port: 22
@@ -60,6 +60,5 @@
     timeout: 300
     state: started
 
-- name: "Pause pour laisser Cloud-Init finaliser le système"
-  ansible.builtin.pause:
-    seconds: 30
+# La vraie attente (auth SSH + cloud-init terminé) est faite dans le second
+# play de deploy.yml via wait_for_connection — pas besoin de pause statique ici.

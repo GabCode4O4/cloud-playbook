@@ -50,13 +50,13 @@
     validate_certs: false
     state: started
 
-- name: "Attendre que le port RDP dispo"
+- name: "Attendre que le port RDP soit dispo"
   ansible.builtin.wait_for:
     host: "172.16.205.{{ vmid_etudiant }}"
     port: 3389
-    delay: 30        
-    timeout: 600     
+    delay: 30
+    timeout: 600
     state: started
-- name: "Laisser le temps à Windows de démarrer ses services RDP"
-  ansible.builtin.pause:
-    seconds: 45
+
+# La vraie attente (auth WinRM réussie) est faite dans le second play de
+# deploy.yml via wait_for_connection — pas besoin de pause statique ici.

@@ -1,14 +1,10 @@
 ---
-- name: Déploiement Cloud Étudiant - Orchestrateur
+- name: Déploiement Cloud Étudiant - Création VM
   hosts: localhost
   connection: local
   gather_facts: false
 
   vars:
-    guac_url: "https://nimbus.3il.fr/guacamole"
-    guac_admin: "guacadmin"
-    guac_pass: "guacadmin"
-
     templates_os:
       UbuntuServ: 103
       Debian: 101
@@ -16,7 +12,7 @@
 
   tasks:
     - name: Installer proxmoxer
-      pip: 
+      pip:
         name: proxmoxer
         state: present
 
@@ -34,14 +30,60 @@
       loop: "{{ [choix_os] | flatten }}"
       when: item in ['Win10', 'WinServer']
 
-    - name: Ajouter les machines
+    - name: Inscrire la VM dans l'inventaire
       add_host:
         name: "172.16.205.{{ vmid_etudiant }}"
         groups: "new_vms"
         ansible_user: "etu"
         ansible_password: "etu"
         ansible_become_password: "etu"
+        ansible_connection: "{{ 'winrm' if (choix_os in ['Win10', 'WinServer']) else 'ssh' }}"
+        ansible_port: "{{ 5986 if (choix_os in ['Win10', 'WinServer']) else 22 }}"
+        ansible_winrm_server_cert_validation: ignore
+        ansible_winrm_transport: ntlm
+        ansible_ssh_common_args: '-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR'
 
+# -----------------------------------------------------------------------------
+# Attente robuste : on ne passe à la création de la connexion Guacamole qu'une
+# fois que la VM répond réellement (auth SSH/WinRM réussie + Cloud-Init terminé
+# côté Linux). Évite les erreurs "connection failed" à la première ouverture
+# de la console Guacamole.
+# -----------------------------------------------------------------------------
+- name: Attendre que la VM soit pleinement prête
+  hosts: new_vms
+  gather_facts: false
+
+  tasks:
+    - name: Attendre que SSH / WinRM accepte une connexion authentifiée
+      ansible.builtin.wait_for_connection:
+        delay: 10
+        timeout: 600
+        sleep: 5
+
+    - name: "[Linux] Attendre la fin de Cloud-Init"
+      ansible.builtin.command: cloud-init status --wait
+      register: ci_status
+      changed_when: false
+      failed_when: >-
+        'status: done' not in ci_status.stdout and
+        'status: degraded' not in ci_status.stdout
+      when: choix_os in ['UbuntuServ', 'Debian']
+
+# -----------------------------------------------------------------------------
+# Configuration Guacamole (connexion + compte étudiant). Repassée sur
+# localhost pour appeler l'API Guacamole.
+# -----------------------------------------------------------------------------
+- name: Configuration Guacamole
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars:
+    guac_url: "https://nimbus.3il.fr/guacamole"
+    guac_admin: "guacadmin"
+    guac_pass: "guacadmin"
+
+  tasks:
     - name: Lancer la configuration Guacamole Linux
       include_tasks: tasks/guac_linux.yml
       loop: "{{ [choix_os] | flatten }}"
@@ -50,7 +92,7 @@
     - name: Lancer la configuration Guacamole Windows
       include_tasks: tasks/guac_windows.yml
       loop: "{{ [choix_os] | flatten }}"
-      when: item in ['Win10', 'WinServer'] 
+      when: item in ['Win10', 'WinServer']
 
     - name: "[Guacamole] Créer le compte etu"
       scicore.guacamole.guacamole_user:
