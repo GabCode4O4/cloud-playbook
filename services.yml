@@ -41,6 +41,12 @@
   tasks:
     - name: "[Linux] Configuration Docker et Services"
       block:
+        - name: "Attendre que SSH accepte le mot de passe (cloud-init terminé)"
+          ansible.builtin.wait_for_connection:
+            delay: 5
+            timeout: 300
+            sleep: 5
+
         - name: Attendre la fin de Cloud-Init
           ansible.builtin.raw: cloud-init status --wait
           register: cloudinit_result
