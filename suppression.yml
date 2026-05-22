@@ -6,7 +6,7 @@
   vars:
     guac_url: "https://nimbus.3il.fr/guacamole"
     guac_admin: "guacadmin"
-    guac_pass: "guacadmin"
+    guac_pass: "2Am8zc6N"
 
   tasks:
     - name: Installer proxmoxer

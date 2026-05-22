@@ -57,6 +57,3 @@
     delay: 30
     timeout: 600
     state: started
-
-# La vraie attente (auth WinRM réussie) est faite dans le second play de
-# deploy.yml via wait_for_connection — pas besoin de pause statique ici.
