@@ -43,12 +43,6 @@
         ansible_winrm_transport: ntlm
         ansible_ssh_common_args: '-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR'
 
-# -----------------------------------------------------------------------------
-# Attente robuste : on ne passe à la création de la connexion Guacamole qu'une
-# fois que la VM répond réellement (auth SSH/WinRM réussie + Cloud-Init terminé
-# côté Linux). Évite les erreurs "connection failed" à la première ouverture
-# de la console Guacamole.
-# -----------------------------------------------------------------------------
 - name: Attendre que la VM soit pleinement prête
   hosts: new_vms
   gather_facts: false
@@ -69,10 +63,6 @@
         'status: degraded' not in ci_status.stdout
       when: choix_os in ['UbuntuServ', 'Debian']
 
-# -----------------------------------------------------------------------------
-# Configuration Guacamole (connexion + compte étudiant). Repassée sur
-# localhost pour appeler l'API Guacamole.
-# -----------------------------------------------------------------------------
 - name: Configuration Guacamole
   hosts: localhost
   connection: local
