@@ -89,3 +89,13 @@
         state: absent
       ignore_errors: true
       when: "'Windows' in choix_os"
+
+    - name: Supprimer le compte Guacamole etu_<vmid>
+      scicore.guacamole.guacamole_user:
+        base_url: "{{ guac_url }}"
+        auth_username: "{{ guac_admin }}"
+        auth_password: "{{ guac_pass }}"
+        username: "etu_{{ vmid_etudiant }}"
+        validate_certs: false
+        state: absent
+      ignore_errors: true
