@@ -6,8 +6,8 @@
 
   vars:
     templates_os:
-      UbuntuServ: 103
-      Debian: 101
+      UbuntuServ: 102
+      Debian: 103
       Win10: 104
 
 
