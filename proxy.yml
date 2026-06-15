@@ -19,7 +19,7 @@
         api_user: "root@pam"
         api_token_id: "{{ pve_api_token_id }}"
         api_token_secret: "{{ pve_api_token_secret }}"
-        node: "nimbus14"
+        node: "pve"
         vmid: "{{ template_id }}"
         clone: "VMtest"
         newid: "10{{ vmid_proxy }}"
@@ -35,7 +35,7 @@
 
     - name: "Injecter l'IP dans la config du clone"
       ansible.builtin.uri:
-        url: "https://{{ pve_api_host }}:8006/api2/json/nodes/nimbus14/qemu/10{{ vmid_proxy }}/config"
+        url: "https://{{ pve_api_host }}:8006/api2/json/nodes/pve/qemu/10{{ vmid_proxy }}/config"
         method: POST
         headers:
           Authorization: "PVEAPIToken=root@pam!{{ pve_api_token_id }}={{ pve_api_token_secret }}"
@@ -47,7 +47,7 @@
 
     - name: "[Proxy] Regénérer le disque Cloud-Init"
       ansible.builtin.uri:
-        url: "https://{{ pve_api_host }}:8006/api2/json/nodes/nimbus14/qemu/10{{ vmid_proxy }}/cloudinit"
+        url: "https://{{ pve_api_host }}:8006/api2/json/nodes/pve/qemu/10{{ vmid_proxy }}/cloudinit"
         method: PUT
         headers:
           Authorization: "PVEAPIToken=root@pam!{{ pve_api_token_id }}={{ pve_api_token_secret }}"
@@ -60,7 +60,7 @@
         api_user: "root@pam"
         api_token_id: "{{ pve_api_token_id }}"
         api_token_secret: "{{ pve_api_token_secret }}"
-        node: "nimbus14"
+        node: "pve"
         vmid: "10{{ vmid_proxy }}"
         validate_certs: false
         state: started

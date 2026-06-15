@@ -5,7 +5,7 @@
     api_user: "root@pam"
     api_token_id: "{{ pve_api_token_id }}"
     api_token_secret: "{{ pve_api_token_secret }}"
-    node: "nimbus14"
+    node: "pve"
     vmid: "{{ template_id }}"
     clone: "WIN10-TEMPLATE"
     newid: "300{{ vmid_etudiant }}"
@@ -20,7 +20,7 @@
 
 - name: "[Windows] Injecter l'IP dans la config"
   ansible.builtin.uri:
-    url: "https://{{ pve_api_host }}:8006/api2/json/nodes/nimbus14/qemu/300{{ vmid_etudiant }}/config"
+    url: "https://{{ pve_api_host }}:8006/api2/json/nodes/pve/qemu/300{{ vmid_etudiant }}/config"
     method: POST
     headers:
       Authorization: "PVEAPIToken=root@pam!{{ pve_api_token_id }}={{ pve_api_token_secret }}"
@@ -32,7 +32,7 @@
 
 - name: "Cloud-Init"      
   ansible.builtin.uri:
-    url: "https://{{ pve_api_host }}:8006/api2/json/nodes/nimbus14/qemu/300{{ vmid_etudiant }}/cloudinit"
+    url: "https://{{ pve_api_host }}:8006/api2/json/nodes/pve/qemu/300{{ vmid_etudiant }}/cloudinit"
     method: PUT
     headers:
       Authorization: "PVEAPIToken=root@pam!{{ pve_api_token_id }}={{ pve_api_token_secret }}"
@@ -45,7 +45,7 @@
     api_user: "root@pam"
     api_token_id: "{{ pve_api_token_id }}"
     api_token_secret: "{{ pve_api_token_secret }}"
-    node: "nimbus14"
+    node: "pve"
     vmid: "300{{ vmid_etudiant }}"
     validate_certs: false
     state: started
