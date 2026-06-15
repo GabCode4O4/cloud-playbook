@@ -5,7 +5,7 @@
   gather_facts: false
 
   vars:
-    template_id: 106
+    template_id: 102
 
   tasks:
     - name: Installer proxmoxer

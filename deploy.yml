@@ -10,6 +10,7 @@
       Debian: 101
       Win10: 104
 
+
   tasks:
     - name: Installer proxmoxer
       pip:
