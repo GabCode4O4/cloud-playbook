@@ -5,7 +5,7 @@
     api_user: "root@pam"
     api_token_id: "{{ pve_api_token_id }}"
     api_token_secret: "{{ pve_api_token_secret }}"
-    node: "pve"
+    node: "nimbus14"
     vmid: "{{ template_id }}"
     clone: "WIN10-TEMPLATE"
     newid: "300{{ vmid_etudiant }}"
@@ -20,19 +20,19 @@
 
 - name: "[Windows] Injecter l'IP dans la config"
   ansible.builtin.uri:
-    url: "https://{{ pve_api_host }}:8006/api2/json/nodes/pve/qemu/300{{ vmid_etudiant }}/config"
+    url: "https://{{ pve_api_host }}:8006/api2/json/nodes/nimbus14/qemu/300{{ vmid_etudiant }}/config"
     method: POST
     headers:
       Authorization: "PVEAPIToken=root@pam!{{ pve_api_token_id }}={{ pve_api_token_secret }}"
     body_format: form-urlencoded
     body:
-      ipconfig0: "ip=192.168.1.1{{ vmid_etudiant }}/16,gw=192.168.1.1"
+      ipconfig0: "ip=172.16.205.{{ vmid_etudiant }}/16,gw=172.16.1.213"
     validate_certs: false
     status_code: 200
 
 - name: "Cloud-Init"      
   ansible.builtin.uri:
-    url: "https://{{ pve_api_host }}:8006/api2/json/nodes/pve/qemu/300{{ vmid_etudiant }}/cloudinit"
+    url: "https://{{ pve_api_host }}:8006/api2/json/nodes/nimbus14/qemu/300{{ vmid_etudiant }}/cloudinit"
     method: PUT
     headers:
       Authorization: "PVEAPIToken=root@pam!{{ pve_api_token_id }}={{ pve_api_token_secret }}"
@@ -45,14 +45,14 @@
     api_user: "root@pam"
     api_token_id: "{{ pve_api_token_id }}"
     api_token_secret: "{{ pve_api_token_secret }}"
-    node: "pve"
+    node: "nimbus14"
     vmid: "300{{ vmid_etudiant }}"
     validate_certs: false
     state: started
 
 - name: "Attendre que le port RDP soit dispo"
   ansible.builtin.wait_for:
-    host: "192.168.1.1{{ vmid_etudiant }}"
+    host: "172.16.205.{{ vmid_etudiant }}"
     port: 3389
     delay: 30
     timeout: 600

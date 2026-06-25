@@ -6,10 +6,9 @@
 
   vars:
     templates_os:
-      UbuntuServ: 102
-      Debian: 104
-      Win10: 101
-
+      UbuntuServ: 103
+      Debian: 101
+      Win10: 104
 
   tasks:
     - name: Installer proxmoxer
@@ -33,7 +32,7 @@
 
     - name: Inscrire la VM dans l'inventaire
       add_host:
-        name: "192.168.1.1{{ vmid_etudiant }}"
+        name: "172.16.205.{{ vmid_etudiant }}"
         groups: "new_vms"
         ansible_user: "etu"
         ansible_password: "etu"
@@ -70,7 +69,7 @@
   gather_facts: false
 
   vars:
-    guac_url: "http://192.168.1.47:8080/guacamole"
+    guac_url: "https://nimbus.3il.fr/guacamole"
     guac_admin: "guacadmin"
     guac_pass: "guacadmin"
 
