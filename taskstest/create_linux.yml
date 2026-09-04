@@ -27,7 +27,7 @@
       Authorization: "PVEAPIToken=root@pam!{{ pve_api_token_id }}={{ pve_api_token_secret }}"
     body_format: form-urlencoded
     body:
-      ipconfig0: "ip=172.16.205.{{ vmid_etudiant }}/16,gw=172.16.1.213"
+      ipconfig0: "ip={{ ip_machine }}/16,gw=172.16.1.213"
     validate_certs: false
     status_code: 200
 
@@ -54,7 +54,7 @@
 
 - name: "Attendre que le port SSH soit dispo"
   ansible.builtin.wait_for:
-    host: "172.16.205.{{ vmid_etudiant }}"
+    host: "{{ ip_machine }}"
     port: 22
     delay: 15
     timeout: 300
