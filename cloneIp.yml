@@ -1,0 +1,98 @@
+---
+- name: Déploiement Cloud Étudiant - Création VM
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars:
+    templates_os:
+      UbuntuServ: 103
+      Debian: 101
+      Win10: 104
+
+  tasks:
+    - name: Installer proxmoxer
+      pip:
+        name: proxmoxer
+        state: present
+
+    - name: Lancer la création Linux
+      include_tasks: taskstest/create_linux.yml
+      vars:
+        template_id: "{{ templates_os[item] }}"
+      loop: "{{ [choix_os] | flatten }}"
+      when: item in ['UbuntuServ', 'Debian']
+
+    - name: Lancer la création Windows
+      include_tasks: taskstest/create_windows.yml
+      vars:
+        template_id: "{{ templates_os[item] }}"
+      loop: "{{ [choix_os] | flatten }}"
+      when: item in ['Win10', 'WinServer']
+
+    - name: Inscrire la VM dans l'inventaire
+      add_host:
+        name: "{{ ip_machine }}"
+        groups: "new_vms"
+        ansible_user: "etu"
+        ansible_password: "etu"
+        ansible_become_password: "etu"
+        ansible_connection: "{{ 'winrm' if (choix_os in ['Win10', 'WinServer']) else 'ssh' }}"
+        ansible_port: "{{ 5986 if (choix_os in ['Win10', 'WinServer']) else 22 }}"
+        ansible_winrm_server_cert_validation: ignore
+        ansible_winrm_transport: ntlm
+        ansible_ssh_common_args: '-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR'
+
+- name: Attendre que la VM soit pleinement prête
+  hosts: new_vms
+  gather_facts: false
+
+  tasks:
+    - name: Attendre que SSH / WinRM accepte une connexion authentifiée
+      ansible.builtin.wait_for_connection:
+        delay: 10
+        timeout: 600
+        sleep: 5
+
+    - name: "[Linux] Attendre la fin de Cloud-Init"
+      ansible.builtin.command: cloud-init status --wait
+      register: ci_status
+      changed_when: false
+      failed_when: >-
+        'status: done' not in ci_status.stdout and
+        'status: degraded' not in ci_status.stdout
+      when: choix_os in ['UbuntuServ', 'Debian']
+
+- name: Configuration Guacamole
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars:
+    guac_url: "https://nimbus.3il.fr/guacamole"
+    guac_admin: "guacadmin"
+    guac_pass: "guacadmin"
+
+  tasks:
+    - name: Lancer la configuration Guacamole Linux
+      include_tasks: taskstest/guac_linux.yml
+      loop: "{{ [choix_os] | flatten }}"
+      when: item in ['UbuntuServ', 'Debian']
+
+    - name: Lancer la configuration Guacamole Windows
+      include_tasks: taskstest/guac_windows.yml
+      loop: "{{ [choix_os] | flatten }}"
+      when: item in ['Win10', 'WinServer']
+
+    - name: "[Guacamole] Créer le compte etu"
+      scicore.guacamole.guacamole_user:
+        base_url: "{{ guac_url }}"
+        auth_username: "{{ guac_admin }}"
+        auth_password: "{{ guac_pass }}"
+        username: "etu_{{ vmid_etudiant }}"
+        password: "etu"
+        allowed_connections:
+          - "SSH_Linux_{{ vmid_etudiant }}"
+          - "RDP_Windows_{{ vmid_etudiant }}"
+        validate_certs: false
+        state: present
