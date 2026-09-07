@@ -32,7 +32,7 @@
 
     - name: Inscrire la VM dans l'inventaire
       add_host:
-        name: "{{ ip_machine }}"
+        name: "{{ adresse_ip }}"
         groups: "new_vms"
         ansible_user: "etu"
         ansible_password: "etu"

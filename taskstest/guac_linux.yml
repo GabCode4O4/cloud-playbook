@@ -6,7 +6,7 @@
     auth_password: "{{ guac_pass }}"
     connection_name: "SSH_Linux_{{ vmid_etudiant }}"
     protocol: "ssh"
-    hostname: "{{ ip_machine }}"
+    hostname: "{{ adresse_ip }}"
     port: 22
     username: "etu"
     password: "etu"

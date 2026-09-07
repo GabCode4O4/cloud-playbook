@@ -6,7 +6,7 @@
     auth_password: "{{ guac_pass }}"
     connection_name: "RDP_Windows_{{ vmid_etudiant }}"
     protocol: "rdp"
-    hostname: "{{ ip_machine }}"
+    hostname: "{{ adresse_ip }}"
     port: 3389
     username: "etu"
     password: "etu"
