@@ -1,0 +1,50 @@
+# =================================================================
+# WHITELIST PROXY — Liste blanche des sites autorisés
+# =================================================================
+# Format  : une entrée par ligne, expression régulière (regex)
+# Exemple : \.github\.com autorise github.com et tous ses sous-domaines
+# Commentaires : lignes commençant par #
+#
+# En MODE EXAMEN : ce fichier est ignoré (tinyproxy arrêté,
+#                  aucun accès internet pour les VMs étudiantes)
+# En MODE NORMAL : seuls les domaines listés ici sont accessibles
+#                  via le proxy — le réseau interne 172.16.0.0/16
+#                  reste toujours joignable sans passer par le proxy
+# =================================================================
+
+# --- Portail & Infrastructure 3IL ---
+\.3il\.fr
+nimbus\.3il\.fr
+
+# --- Documentation & Cours ---
+# \.moodle\.
+# docs\.python\.org
+# developer\.mozilla\.org
+# www\.w3schools\.com
+
+# --- Dépôts système Debian/Ubuntu ---
+\.debian\.org
+\.ubuntu\.com
+security\.ubuntu\.com
+archive\.ubuntu\.com
+security\.debian\.org
+deb\.debian\.org
+packages\.debian\.org
+
+# --- PyPI (pip) ---
+# pypi\.org
+# files\.pythonhosted\.org
+
+# --- Docker Hub ---
+# registry-1\.docker\.io
+# auth\.docker\.io
+# index\.docker\.io
+# production\.cloudflare\.docker\.com
+
+# --- GitHub ---
+# \.github\.com
+# \.githubusercontent\.com
+# codeload\.github\.com
+
+# --- DNS & Résolution ---
+# (Ajouter ici les domaines spécifiques aux TPs)

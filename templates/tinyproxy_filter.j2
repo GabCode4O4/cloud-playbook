@@ -1,0 +1,7 @@
+# Généré par Ansible — ne pas modifier manuellement
+# Whitelist tinyproxy | {{ ansible_date_time.iso8601 }}
+# Modifiez proxy_whitelist.txt puis relancez exam_mode.yml pour mettre à jour.
+
+{% for entry in whitelist_entries %}
+{{ entry }}
+{% endfor %}

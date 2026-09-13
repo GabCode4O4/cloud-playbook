@@ -1,0 +1,229 @@
+---
+# =================================================================
+# exam_mode.yml — Activation / désactivation du mode examen
+# =================================================================
+# Variables requises (extra vars AWX) :
+#   exam_mode    : true  → proxy arrêté (aucun accès internet)
+#                  false → proxy démarré avec whitelist
+#   vmid_proxy   : identifiant de la VM proxy (ex: 42)
+#                  → IP déduite : 172.16.205.<vmid_proxy>
+#
+# Variable optionnelle :
+#   proxy_port   : port tinyproxy (défaut : 8888)
+#
+# Sous-réseau interne 172.16.0.0/16 :
+#   Le trafic interne entre VMs étudiantes n'est JAMAIS routé via
+#   le proxy (NO_PROXY configuré dans /etc/environment des VMs).
+#   Désactiver tinyproxy en mode examen bloque uniquement internet.
+# =================================================================
+
+- name: Préparer l'inventaire dynamique
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  tasks:
+    - name: Ajouter la VM proxy à l'inventaire
+      ansible.builtin.add_host:
+        name: "172.16.205.{{ vmid_proxy }}"
+        groups: proxy_vm
+        ansible_user: etu
+        ansible_password: etu
+        ansible_become_password: etu
+        ansible_ssh_common_args: >-
+          -o StrictHostKeyChecking=no
+          -o UserKnownHostsFile=/dev/null
+          -o LogLevel=ERROR
+
+    - name: Attendre que SSH soit disponible sur la VM proxy
+      ansible.builtin.wait_for:
+        host: "172.16.205.{{ vmid_proxy }}"
+        port: 22
+        timeout: 120
+        state: started
+
+# -----------------------------------------------------------------
+# Play 2 : Gestion de tinyproxy sur la VM proxy
+# -----------------------------------------------------------------
+- name: "Gestion tinyproxy — mode examen : {{ exam_mode | bool }}"
+  hosts: proxy_vm
+  gather_facts: true
+  become: true
+
+  vars:
+    proxy_port: 8888
+    whitelist_src: "{{ playbook_dir }}/proxy_whitelist.txt"
+    internal_subnet: "172.16.0.0/16"
+
+  tasks:
+
+    # ── MODE EXAMEN ACTIVÉ ────────────────────────────────────────
+    - name: "[Mode Examen] Arrêter tinyproxy (accès internet coupé)"
+      ansible.builtin.systemd:
+        name: tinyproxy
+        state: stopped
+        enabled: false
+      when: exam_mode | bool
+      ignore_errors: true
+
+    - name: "[Mode Examen] Vérifier que le port {{ proxy_port }} est fermé"
+      ansible.builtin.wait_for:
+        host: 127.0.0.1
+        port: "{{ proxy_port }}"
+        state: stopped
+        timeout: 15
+      when: exam_mode | bool
+      ignore_errors: true
+
+    - name: "[Mode Examen] Afficher le statut"
+      ansible.builtin.debug:
+        msg: >
+          MODE EXAMEN ACTIVÉ — tinyproxy arrêté sur 172.16.205.{{ vmid_proxy }}:{{ proxy_port }}.
+          Le sous-réseau interne {{ internal_subnet }} reste accessible normalement.
+      when: exam_mode | bool
+
+    # ── MODE NORMAL ───────────────────────────────────────────────
+    - name: "[Mode Normal] Charger la whitelist depuis le fichier (si non fournie via AWX)"
+      ansible.builtin.set_fact:
+        whitelist_entries: >-
+          {{
+            lookup('file', whitelist_src).splitlines()
+            | reject('match', '^\\s*#')
+            | reject('match', '^\\s*$')
+            | list
+          }}
+      delegate_to: localhost
+      when: not exam_mode | bool and whitelist_entries is not defined
+
+    - name: "[Mode Normal] Installer tinyproxy"
+      ansible.builtin.apt:
+        name: tinyproxy
+        state: present
+        update_cache: true
+      when: not exam_mode | bool
+
+    - name: "[Mode Normal] Créer le répertoire de logs tinyproxy"
+      ansible.builtin.file:
+        path: /var/log/tinyproxy
+        state: directory
+        owner: tinyproxy
+        group: tinyproxy
+        mode: "0755"
+      when: not exam_mode | bool
+
+    - name: "[Mode Normal] Déployer la configuration tinyproxy"
+      ansible.builtin.template:
+        src: templates/tinyproxy.conf.j2
+        dest: /etc/tinyproxy/tinyproxy.conf
+        owner: root
+        group: root
+        mode: "0644"
+      notify: Redémarrer tinyproxy
+      when: not exam_mode | bool
+
+    - name: "[Mode Normal] Déployer le fichier de filtres (whitelist)"
+      ansible.builtin.template:
+        src: templates/tinyproxy_filter.j2
+        dest: /etc/tinyproxy/filter
+        owner: tinyproxy
+        group: tinyproxy
+        mode: "0640"
+      notify: Redémarrer tinyproxy
+      when: not exam_mode | bool
+
+    - name: "[Mode Normal] Activer et démarrer tinyproxy"
+      ansible.builtin.systemd:
+        name: tinyproxy
+        state: started
+        enabled: true
+        daemon_reload: true
+      when: not exam_mode | bool
+
+    - name: "[Mode Normal] Vérifier que le port {{ proxy_port }} répond"
+      ansible.builtin.wait_for:
+        host: 127.0.0.1
+        port: "{{ proxy_port }}"
+        state: started
+        timeout: 30
+      when: not exam_mode | bool
+
+    - name: "[Mode Normal] Afficher le statut"
+      ansible.builtin.debug:
+        msg: >
+          MODE NORMAL — tinyproxy actif sur 172.16.205.{{ vmid_proxy }}:{{ proxy_port }}.
+          Whitelist : {{ whitelist_entries | length }} entrée(s) chargée(s).
+          Sous-réseau interne {{ internal_subnet }} : bypass proxy (NO_PROXY).
+      when: not exam_mode | bool
+
+  handlers:
+    - name: Redémarrer tinyproxy
+      ansible.builtin.systemd:
+        name: tinyproxy
+        state: restarted
+
+# -----------------------------------------------------------------
+# Play 3 : Configuration proxy sur les VMs étudiantes Linux
+#   (à lancer une seule fois après le déploiement, ou avec
+#    vmid_list passé en extra var : vmid_list=[01,02,...,30])
+# -----------------------------------------------------------------
+- name: Configurer les variables proxy sur les VMs étudiantes
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  tasks:
+    - name: Ajouter les VMs étudiantes à l'inventaire
+      ansible.builtin.add_host:
+        name: "172.16.205.{{ item }}"
+        groups: student_vms
+        ansible_user: etu
+        ansible_password: etu
+        ansible_become_password: etu
+        ansible_ssh_common_args: >-
+          -o StrictHostKeyChecking=no
+          -o UserKnownHostsFile=/dev/null
+          -o LogLevel=ERROR
+      loop: "{{ vmid_list | default([]) }}"
+      when: vmid_list is defined and vmid_list | length > 0
+
+- name: "Appliquer les paramètres proxy sur les VMs étudiantes"
+  hosts: student_vms
+  gather_facts: false
+  become: true
+
+  vars:
+    proxy_port: 8888
+    proxy_host: "172.16.205.{{ vmid_proxy }}"
+    internal_subnet: "172.16.0.0/16"
+    no_proxy_list: "{{ internal_subnet }},localhost,127.0.0.1"
+
+  tasks:
+    - name: "[Mode Normal] Configurer HTTP_PROXY et NO_PROXY dans /etc/environment"
+      ansible.builtin.blockinfile:
+        path: /etc/environment
+        marker: "# {mark} ANSIBLE MANAGED — proxy"
+        block: |
+          http_proxy=http://{{ proxy_host }}:{{ proxy_port }}
+          https_proxy=http://{{ proxy_host }}:{{ proxy_port }}
+          HTTP_PROXY=http://{{ proxy_host }}:{{ proxy_port }}
+          HTTPS_PROXY=http://{{ proxy_host }}:{{ proxy_port }}
+          no_proxy={{ no_proxy_list }}
+          NO_PROXY={{ no_proxy_list }}
+        create: true
+        mode: "0644"
+      when:
+        - not exam_mode | bool
+        - vmid_list is defined
+        - vmid_list | length > 0
+
+    - name: "[Mode Examen] Supprimer les paramètres proxy de /etc/environment"
+      ansible.builtin.blockinfile:
+        path: /etc/environment
+        marker: "# {mark} ANSIBLE MANAGED — proxy"
+        block: ""
+        create: true
+        mode: "0644"
+      when:
+        - exam_mode | bool
+        - vmid_list is defined
+        - vmid_list | length > 0

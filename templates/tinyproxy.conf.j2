@@ -1,0 +1,32 @@
+# Généré par Ansible — ne pas modifier manuellement
+# Playbook : exam_mode.yml | Date : {{ ansible_date_time.date }}
+
+User tinyproxy
+Group tinyproxy
+
+Port 8888
+Listen 0.0.0.0
+Timeout 600
+
+DefaultErrorFile "/usr/share/tinyproxy/default.html"
+StatFile       "/usr/share/tinyproxy/stats.html"
+
+LogLevel Warning
+LogFile  "/var/log/tinyproxy/tinyproxy.log"
+
+PidFile "/run/tinyproxy/tinyproxy.pid"
+
+MaxClients 100
+
+# --- Contrôle d'accès ---
+# Seul le sous-réseau étudiant 172.16.0.0/16 peut utiliser ce proxy.
+# Les machines hors de ce sous-réseau se verront refuser la connexion.
+Allow 127.0.0.1
+Allow 172.16.0.0/16
+
+# --- Filtrage whitelist ---
+# Seules les URL correspondant aux regex de /etc/tinyproxy/filter
+# sont autorisées. Toute autre requête est rejetée (403).
+Filter          "/etc/tinyproxy/filter"
+FilterDefaultDeny Yes
+FilterURLs        Yes

@@ -85,6 +85,42 @@ ansible-playbook powerOn.yml \
   -e pve_api_token_secret=<TOKEN_SECRET>
 ```
 
+### `exam_mode.yml` — Mode examen / Proxy tinyproxy
+
+Active ou désactive le proxy tinyproxy sur la VM proxy selon le mode examen.
+
+- **Mode examen activé** (`exam_mode=true`) : tinyproxy est arrêté, aucun accès internet depuis les VMs étudiantes.
+- **Mode normal** (`exam_mode=false`) : tinyproxy est démarré et applique la whitelist définie dans `proxy_whitelist.txt`.
+
+Le sous-réseau interne `172.16.0.0/16` est toujours joignable sans passer par le proxy (`NO_PROXY`), les VMs étudiantes peuvent communiquer entre elles dans les deux modes.
+
+```bash
+# Activer le mode examen (couper internet)
+ansible-playbook exam_mode.yml \
+  -e exam_mode=true \
+  -e vmid_proxy=99
+
+# Revenir en mode normal (proxy + whitelist)
+ansible-playbook exam_mode.yml \
+  -e exam_mode=false \
+  -e vmid_proxy=99
+
+# Mode normal + configurer le proxy sur les VMs étudiantes 01 à 03
+ansible-playbook exam_mode.yml \
+  -e exam_mode=false \
+  -e vmid_proxy=99 \
+  -e '{"vmid_list":["01","02","03"]}'
+```
+
+**Modifier la whitelist** : éditer `proxy_whitelist.txt` (une regex par ligne, `#` pour commenter), puis relancer le playbook en mode normal.
+
+| Variable | Description | Exemple |
+|---|---|---|
+| `exam_mode` | `true` = proxy arrêté, `false` = proxy actif | `true` |
+| `vmid_proxy` | VMID de la VM proxy | `99` |
+| `vmid_list` | (optionnel) Liste des vmid étudiants à configurer | `["01","02"]` |
+| `proxy_port` | Port tinyproxy (défaut : 8888) | `8888` |
+
 ### `suppression.yml` — Suppression complète
 
 Éteint et supprime la VM, puis retire la connexion Guacamole associée.
@@ -120,18 +156,23 @@ ansible-playbook suppression.yml \
 ```
 cloud-playbook/
 ├── deploy.yml              # Orchestrateur principal
+├── exam_mode.yml           # Mode examen — activation/désactivation du proxy
 ├── services.yml            # Installation des services applicatifs
 ├── powerOn.yml             # Démarrage self-service
 ├── powerOff.yml            # Arrêt self-service
 ├── suppression.yml         # Suppression complète
+├── proxy_whitelist.txt     # Whitelist tinyproxy (bloc-notes des sites autorisés)
 ├── requirements.txt        # Dépendances Python (proxmoxer)
 ├── collections/
 │   └── requirements.yml    # Collections Ansible requises
-└── tasks/
-    ├── create_linux.yml    # Clone + démarrage VM Linux
-    ├── create_windows.yml  # Clone + démarrage VM Windows
-    ├── guac_linux.yml      # Connexion SSH dans Guacamole
-    └── guac_windows.yml    # Connexion RDP dans Guacamole
+├── tasks/
+│   ├── create_linux.yml    # Clone + démarrage VM Linux
+│   ├── create_windows.yml  # Clone + démarrage VM Windows
+│   ├── guac_linux.yml      # Connexion SSH dans Guacamole
+│   └── guac_windows.yml    # Connexion RDP dans Guacamole
+└── templates/
+    ├── tinyproxy.conf.j2   # Config tinyproxy (whitelist + Allow sous-réseau)
+    └── tinyproxy_filter.j2 # Fichier de filtres généré depuis proxy_whitelist.txt
 ```
 
 ## Accès étudiant
