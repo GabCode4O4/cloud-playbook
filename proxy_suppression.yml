@@ -1,0 +1,44 @@
+---
+# =================================================================
+# proxy_suppression.yml — Suppression d'une VM proxy
+# =================================================================
+# Variables requises :
+#   vmid_proxy : identifiant de la VM proxy (ex: 42)
+#                → VMID Proxmox : 10<vmid_proxy>
+# =================================================================
+
+- name: Suppression de la VM proxy
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  tasks:
+    - name: Installer proxmoxer
+      pip:
+        name: proxmoxer
+        state: present
+
+    - name: Éteindre la VM proxy
+      community.proxmox.proxmox_kvm:
+        api_host: "{{ pve_api_host }}"
+        api_user: "root@pam"
+        api_token_id: "{{ pve_api_token_id }}"
+        api_token_secret: "{{ pve_api_token_secret }}"
+        node: "nimbus14"
+        vmid: "10{{ vmid_proxy }}"
+        validate_certs: false
+        state: stopped
+        force: true
+      ignore_errors: true
+
+    - name: Supprimer la VM proxy
+      community.proxmox.proxmox_kvm:
+        api_host: "{{ pve_api_host }}"
+        api_user: "root@pam"
+        api_token_id: "{{ pve_api_token_id }}"
+        api_token_secret: "{{ pve_api_token_secret }}"
+        node: "nimbus14"
+        vmid: "10{{ vmid_proxy }}"
+        validate_certs: false
+        state: absent
+      ignore_errors: true
