@@ -29,9 +29,8 @@
       ansible.builtin.add_host:
         name: "172.16.205.{{ vmid_proxy }}"
         groups: proxy_vm
-        ansible_user: etu
+        ansible_user: root
         ansible_password: etu
-        ansible_become_password: etu
         ansible_ssh_common_args: >-
           -o StrictHostKeyChecking=no
           -o UserKnownHostsFile=/dev/null
