@@ -58,7 +58,7 @@
 
   pre_tasks:
     - name: Bootstrap python3-apt
-      ansible.builtin.raw: apt-get install -y python3-apt
+      ansible.builtin.raw: /usr/bin/apt-get install -y python3-apt
       changed_when: false
       when: exam_mode | bool
 
