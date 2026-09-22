@@ -49,7 +49,7 @@
 - name: "Gestion tinyproxy — mode examen : {{ exam_mode | bool }}"
   hosts: proxy_vm
   gather_facts: true
-  become: true
+  become: false
 
   vars:
     proxy_port: 8888
