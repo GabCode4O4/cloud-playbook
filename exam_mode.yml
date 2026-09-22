@@ -56,6 +56,12 @@
     whitelist_src: "{{ playbook_dir }}/proxy_whitelist.txt"
     internal_subnet: "172.16.0.0/16"
 
+  pre_tasks:
+    - name: Bootstrap python3-apt
+      ansible.builtin.raw: apt-get install -y python3-apt
+      changed_when: false
+      when: exam_mode | bool
+
   tasks:
 
     # ── MODE COURS : arrêter tinyproxy ────────────────────────────
